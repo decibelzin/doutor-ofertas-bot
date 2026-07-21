@@ -1,7 +1,10 @@
-import type { WASocket } from '@whiskeysockets/baileys';
+import axios from 'axios';
+import type { WASocket, WAUrlInfo } from '@whiskeysockets/baileys';
 import { config } from '../config';
 import { logger } from '../logger';
+import { formatMoney } from '../format/whatsapp';
 import { randomDelay, sleep } from '../util/time';
+import type { Deal } from '../core/deal';
 
 export interface GroupInfo {
   id: string;
@@ -11,7 +14,7 @@ export interface GroupInfo {
 
 /**
  * Lista todos os grupos em que a conta do bot participa (id + nome + tamanho).
- * É daqui que saem os IDs para preencher WHATSAPP_GROUP_IDS no .env.
+ * É daqui que saem os IDs para os nichos (config/niches.json).
  */
 export async function listGroups(sock: WASocket): Promise<GroupInfo[]> {
   const metadata = await sock.groupFetchAllParticipating();
@@ -21,56 +24,76 @@ export async function listGroups(sock: WASocket): Promise<GroupInfo[]> {
 }
 
 /**
- * Envia uma mensagem (texto + imagem opcional) para UM grupo.
- * Se a imagem falhar, cai para texto puro como fallback.
+ * Monta a PRÉVIA DE LINK (card clicável) a partir da oferta: título + preço na
+ * descrição + imagem do produto como thumbnail. É isso que faz o link virar
+ * hyperlink azul e tappável no WhatsApp (em vez de texto solto).
+ *
+ * O `matched-text` precisa bater com a URL que aparece no texto da mensagem.
+ */
+export async function buildLinkPreview(deal: Deal): Promise<WAUrlInfo> {
+  const url = deal.affiliateUrl;
+  const info: WAUrlInfo = {
+    'canonical-url': url,
+    'matched-text': url,
+    title: deal.title.slice(0, 90),
+    description:
+      deal.priceOriginal && deal.priceOriginal > deal.priceNow
+        ? `De R$ ${formatMoney(deal.priceOriginal)} por R$ ${formatMoney(deal.priceNow)} · ${deal.discountPercent}% OFF`
+        : `R$ ${formatMoney(deal.priceNow)}`,
+  };
+
+  if (deal.imageUrl) {
+    try {
+      // ML serve .jpg na mesma URL; WhatsApp quer thumbnail JPEG.
+      const jpgUrl = deal.imageUrl.replace(/\.webp(\?.*)?$/i, '.jpg');
+      const { data } = await axios.get<ArrayBuffer>(jpgUrl, {
+        responseType: 'arraybuffer',
+        timeout: 10000,
+      });
+      info.jpegThumbnail = Buffer.from(data);
+    } catch (err) {
+      logger.debug({ err: (err as Error).message }, '[WhatsApp] Sem thumbnail no preview.');
+    }
+  }
+  return info;
+}
+
+/**
+ * Envia uma mensagem de texto para UM grupo, com prévia de link (card clicável)
+ * quando fornecida.
  */
 export async function sendToGroup(
   sock: WASocket,
   groupId: string,
   text: string,
-  imageUrl?: string | null
+  preview?: WAUrlInfo | null
 ): Promise<void> {
-  if (imageUrl) {
-    try {
-      await sock.sendMessage(groupId, { image: { url: imageUrl }, caption: text });
-      return;
-    } catch (err) {
-      logger.warn(
-        { err: (err as Error).message, imageUrl },
-        '[WhatsApp] Falha ao enviar com imagem, mandando só o texto.'
-      );
-    }
-  }
-  // linkPreview: null desliga a geração de prévia (evita depender do pacote
-  // opcional "link-preview-js").
-  await sock.sendMessage(groupId, { text, linkPreview: null });
+  await sock.sendMessage(groupId, { text, linkPreview: preview ?? null });
 }
 
 /**
- * Envia a mesma mensagem para vários grupos, com um delay ALEATÓRIO entre um
- * grupo e o próximo (anti-ban — evita padrão de broadcast simultâneo).
- *
+ * Envia a mesma mensagem para vários grupos, com delay aleatório entre eles
+ * (anti-ban). Usado pelo comando de teste (send-test).
  * @returns a lista de grupos para os quais o envio deu certo.
  */
 export async function broadcast(
   sock: WASocket,
   groupIds: string[],
   text: string,
-  imageUrl?: string | null
+  preview?: WAUrlInfo | null
 ): Promise<string[]> {
   const ok: string[] = [];
 
   for (let i = 0; i < groupIds.length; i += 1) {
     const groupId = groupIds[i]!;
     try {
-      await sendToGroup(sock, groupId, text, imageUrl);
+      await sendToGroup(sock, groupId, text, preview);
       ok.push(groupId);
       logger.info({ groupId }, '[WhatsApp] Mensagem enviada.');
     } catch (err) {
       logger.error({ err: (err as Error).message, groupId }, '[WhatsApp] Falha ao enviar ao grupo.');
     }
 
-    // Espera entre grupos (menos depois do último).
     if (i < groupIds.length - 1) {
       const wait = randomDelay(config.throttle.groupDelayMinMs, config.throttle.groupDelayMaxMs);
       logger.debug({ ms: wait }, '[WhatsApp] Aguardando antes do próximo grupo...');

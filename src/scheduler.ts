@@ -6,7 +6,7 @@ import { collectNicheDeals } from './core/selector';
 import { loadNiches, type Niche } from './core/niches';
 import { formatDeal } from './format/whatsapp';
 import { whenReady } from './whatsapp/client';
-import { sendToGroup } from './whatsapp/sender';
+import { sendToGroup, buildLinkPreview } from './whatsapp/sender';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
@@ -72,12 +72,15 @@ export async function postNiche(
   // Troca o link do ML pelo curto (meli.la) quando disponível; senão mantém o matt.
   await enrichWithShortLink(deal);
 
+  // Monta a prévia de link (card clicável) uma vez — mesma pra todos os grupos.
+  const preview = await buildLinkPreview(deal);
+
   const sock = await whenReady();
   for (let i = 0; i < niche.groups.length; i += 1) {
     const groupId = niche.groups[i]!;
     const text = formatDeal(deal, { variant: i });
     try {
-      await sendToGroup(sock, groupId, text, deal.imageUrl);
+      await sendToGroup(sock, groupId, text, preview);
       store.markPosted(deal, groupId);
       logger.info({ niche: niche.name, groupId, id: deal.id, title: deal.title }, '[Scheduler] Oferta postada.');
     } catch (err) {
