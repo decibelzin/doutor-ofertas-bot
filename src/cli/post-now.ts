@@ -5,14 +5,14 @@
  *   npm run post-now
  */
 import { connectWhatsApp, whenReady } from '../whatsapp/client';
-import { postOneDeal } from '../scheduler';
+import { postNowAll } from '../scheduler';
 import { logger } from '../logger';
 
 async function main(): Promise<void> {
   await connectWhatsApp();
   await whenReady();
-  logger.info('[post-now] Postando uma oferta agora...');
-  await postOneDeal({ ignoreWindow: true });
+  logger.info('[post-now] Postando uma oferta em cada nicho agora...');
+  await postNowAll({ ignoreWindow: true });
   logger.info('[post-now] Concluído.');
   process.exit(0);
 }

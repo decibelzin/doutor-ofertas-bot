@@ -2,5 +2,6 @@ node_modules/
 dist/
 data/
 .env
+config/niches.json
 *.log
 npm-debug.log*

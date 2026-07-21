@@ -52,6 +52,38 @@ npm start                # conecta e posta a cada ~8min (com jitter), das 8h às
 # (dev: npm run dev)
 ```
 
+## Nichos (grupos por segmento)
+
+Em vez de mandar tudo pra todos os grupos, você define **nichos** — cada um com
+seus grupos, suas fontes e sua cadência. Ex.: grupos só de perfume recebem só
+oferta de perfume.
+
+1. Copie o template e edite:
+   ```bash
+   cp config/niches.example.json config/niches.json   # Windows: copy ...
+   ```
+2. Preencha cada nicho com seus grupos (`@g.us`) e as categorias do ML.
+
+Cada nicho puxa ofertas da(s) **categoria(s) do ML** que você listar
+(`/ofertas?category=<ID>`), e da **Shopee** por palavra-chave (quando a API
+liberar). Sem `config/niches.json`, o bot usa um nicho "geral" com
+`WHATSAPP_GROUP_IDS`.
+
+**Categorias do ML verificadas** (volume aproximado de ofertas):
+
+| Nicho | Categoria ID | Ofertas |
+|---|---|---|
+| Perfumes | `MLB6284` | ~23 |
+| Suplementos (creatina/whey) | `MLB264586` | ~39 |
+| Esportes e Fitness | `MLB1276` | ~26 |
+| Beleza (geral) | `MLB1246` | ~47 |
+| Eletrônicos / TV | `MLB1000` | ~42 |
+| Celulares | `MLB1051` | ~40 |
+| Farmácia | `MLB431646` | ~1 (magro) |
+
+> Nichos com pouco volume no ML (ex.: farmácia/saúde) vão render bem melhor
+> quando a **Shopee** entrar (busca por palavra-chave).
+
 ## Scripts
 | Comando | O que faz |
 |---|---|

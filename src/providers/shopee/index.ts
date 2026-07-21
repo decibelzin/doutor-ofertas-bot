@@ -103,16 +103,18 @@ function computeOriginalPrice(priceNow: number, discountRate: number): number | 
 
 export const name = 'shopee';
 
-export async function fetchDeals(): Promise<Deal[]> {
+/** Busca ofertas na Shopee para as palavras-chave dadas (usado por nichos). */
+export async function fetchDealsForKeywords(keywords: string[], minDiscount?: number): Promise<Deal[]> {
   if (!config.shopee.enabled) {
     logger.warn('[Shopee] SHOPEE_APP_ID/SHOPEE_APP_SECRET ausentes — pulando Shopee.');
     return [];
   }
 
-  const { searchTerms, minDiscountPercent, fallbackCoupon } = config.shopee;
+  const minDiscountPercent = minDiscount ?? config.shopee.minDiscountPercent;
+  const { fallbackCoupon } = config.shopee;
   const byItem = new Map<string, OfferNode>();
 
-  for (const term of searchTerms) {
+  for (const term of keywords) {
     for (const node of await searchTerm(term)) {
       const key = String(node.itemId);
       if (!byItem.has(key)) byItem.set(key, node);
@@ -146,4 +148,9 @@ export async function fetchDeals(): Promise<Deal[]> {
 
   logger.info({ count: deals.length }, '[Shopee] Ofertas coletadas.');
   return deals;
+}
+
+/** Busca com os termos padrão do .env (SHOPEE_SEARCH_TERMS). */
+export async function fetchDeals(): Promise<Deal[]> {
+  return fetchDealsForKeywords(config.shopee.searchTerms);
 }

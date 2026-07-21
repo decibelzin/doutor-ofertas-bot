@@ -82,14 +82,35 @@ export function parseOfertasHtml(html: string): Deal[] {
   return deals;
 }
 
-/** Baixa a página de ofertas e devolve os Deals. */
-export async function fetchOfertas(): Promise<Deal[]> {
-  const { data } = await axios.get<string>(OFERTAS_URL, {
+/**
+ * Baixa a página de ofertas e devolve os Deals. Se `categoryId` for passado
+ * (ex.: "MLB6284" = Perfumes), raspa a página daquela categoria — é assim que
+ * cada nicho puxa suas ofertas.
+ */
+export async function fetchOfertas(categoryId?: string): Promise<Deal[]> {
+  const url = categoryId ? `${OFERTAS_URL}?category=${encodeURIComponent(categoryId)}` : OFERTAS_URL;
+  const { data } = await axios.get<string>(url, {
     headers: { 'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9' },
     timeout: 20000,
     responseType: 'text',
   });
   const deals = parseOfertasHtml(data);
-  logger.info({ count: deals.length }, '[ML/ofertas] Ofertas raspadas.');
+  logger.info({ count: deals.length, categoria: categoryId ?? 'geral' }, '[ML/ofertas] Ofertas raspadas.');
   return deals;
+}
+
+/** Raspa várias categorias e junta (dedup por id). */
+export async function fetchOfertasForCategories(categoryIds: string[]): Promise<Deal[]> {
+  if (categoryIds.length === 0) return fetchOfertas();
+  const byId = new Map<string, Deal>();
+  for (const catId of categoryIds) {
+    try {
+      for (const deal of await fetchOfertas(catId)) {
+        if (!byId.has(deal.id)) byId.set(deal.id, deal);
+      }
+    } catch (err) {
+      logger.error({ err: (err as Error).message, catId }, '[ML/ofertas] Falha ao raspar categoria');
+    }
+  }
+  return [...byId.values()];
 }

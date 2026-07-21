@@ -4,6 +4,9 @@ import type { Deal } from './deal';
 
 import * as mercadolivre from '../providers/mercadolivre';
 import * as shopee from '../providers/shopee';
+import { fetchOfertasForCategories } from '../providers/mercadolivre/ofertas';
+import { fetchDealsForKeywords as shopeeByKeywords } from '../providers/shopee';
+import type { Niche } from './niches';
 
 interface Provider {
   name: string;
@@ -55,4 +58,40 @@ export async function collectRankedDeals(): Promise<Deal[]> {
   });
 
   return unique;
+}
+
+/**
+ * Coleta ofertas de UM nicho: Shopee (por palavras-chave, quando ligada) + ML
+ * (por categorias). Filtra pelo desconto mínimo do nicho e rankeia.
+ */
+export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
+  const minDiscount = niche.minDiscountPercent ?? config.mercadoLivre.minDiscountPercent;
+  const all: Deal[] = [];
+
+  if (config.shopee.enabled && niche.shopee?.keywords?.length) {
+    try {
+      all.push(...(await shopeeByKeywords(niche.shopee.keywords, minDiscount)));
+    } catch (err) {
+      logger.error({ err: (err as Error).message, niche: niche.name }, '[Selector] Erro Shopee');
+    }
+  }
+
+  if (config.mercadoLivre.enabled) {
+    try {
+      all.push(...(await fetchOfertasForCategories(niche.ml?.categories ?? [])));
+    } catch (err) {
+      logger.error({ err: (err as Error).message, niche: niche.name }, '[Selector] Erro ML');
+    }
+  }
+
+  const seen = new Set<string>();
+  const deals = all.filter((d) => {
+    if (seen.has(d.id) || d.discountPercent < minDiscount) return false;
+    seen.add(d.id);
+    return true;
+  });
+  deals.sort(
+    (a, b) => b.discountPercent - a.discountPercent || (b.commissionRate ?? 0) - (a.commissionRate ?? 0)
+  );
+  return deals;
 }

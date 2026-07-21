@@ -1,0 +1,19 @@
+[
+  {
+    "name": "perfumes",
+    "groups": ["COLE_AQUI_O_ID_DO_GRUPO@g.us", "OUTRO_GRUPO@g.us"],
+    "ml": { "categories": ["MLB6284"] },
+    "shopee": { "keywords": ["perfume", "eau de parfum", "eau de toilette"] },
+    "minDiscountPercent": 20,
+    "intervalMinutes": 20
+  },
+
+  {
+    "name": "fitness",
+    "groups": ["GRUPO_FITNESS@g.us"],
+    "ml": { "categories": ["MLB264586"] },
+    "shopee": { "keywords": ["creatina", "whey protein", "suplemento", "bcaa"] },
+    "minDiscountPercent": 20,
+    "intervalMinutes": 15
+  }
+]
