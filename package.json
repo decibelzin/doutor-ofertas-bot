@@ -14,6 +14,7 @@
     "ml-auth": "tsx src/cli/ml-auth.ts",
     "fetch": "tsx src/cli/fetch.ts",
     "post-now": "tsx src/cli/post-now.ts",
+    "update-perfumes": "tsx src/cli/update-perfumes.ts",
     "ml-link": "tsx src/cli/ml-link.ts"
   },
   "engines": {

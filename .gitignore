@@ -1,7 +1,10 @@
 node_modules/
 dist/
-data/
+data/*
+!data/perfumes.json
+!data/notes-pt.json
 .env
 config/niches.json
 *.log
 npm-debug.log*
+config/presets.json

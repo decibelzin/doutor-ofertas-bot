@@ -1,0 +1,35 @@
+{
+  "presets": [
+    {
+      "match": ["afnan", "9pm"],
+      "not": ["elixir", "intense"],
+      "nome": "Afnan 9PM",
+      "descricao": "🍐 O CAPITÃO USA ESSE NA BALADA",
+      "notas": ["Maçã Verde", "Lavanda", "Âmbar", "Baunilha"],
+      "imagem": ""
+    },
+    {
+      "match": ["afnan", "9pm", "elixir"],
+      "nome": "Afnan 9PM Elixir",
+      "descricao": "🔥 A VERSÃO PARRUDA DO 9PM"
+    },
+    {
+      "match": ["212", "vip", "men"],
+      "not": ["black", "party"],
+      "nome": "212 VIP Men — Carolina Herrera",
+      "descricao": "🖤 O CLÁSSICO DA NOITE"
+    },
+    {
+      "match": ["la vie est belle"],
+      "not": ["intensement", "intense", "absolu", "soleil"],
+      "nome": "La Vie Est Belle — Lancôme",
+      "descricao": "💗 O CORINGA DAS MULHERES"
+    },
+    {
+      "id": "MLB1234567890",
+      "nome": "Sauvage Elixir — Dior",
+      "descricao": "🌑 O MONSTRO DE PROJEÇÃO"
+    }
+  ],
+  "brands": []
+}

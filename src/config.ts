@@ -40,6 +40,11 @@ export interface Config {
   dedup: {
     cooldownDays: number;
   };
+  filter: {
+    // Só postar perfume que a gente casa no banco (Fragrantica) OU que está fichado.
+    // Corta marca no-name e produto obscuro. Ligado por padrão.
+    onlyKnownPerfumes: boolean;
+  };
   store: {
     file: string;
   };
@@ -63,6 +68,10 @@ export interface Config {
     siteId: string;
     searchTerms: string[];
     minDiscountPercent: number;
+    // Avaliação mínima (0–5) pra postar um produto do hub. 0 = desligado.
+    minRating: number;
+    // Quantas páginas (12 itens cada) buscar por termo no hub de afiliado.
+    hubPagesPerTerm: number;
     // Link de afiliado: 'matt' anexa matt_word/matt_tool; 'simple' usa uma tag única.
     linkMode: 'matt' | 'simple';
     mattWord: string;
@@ -102,6 +111,9 @@ export const config: Config = {
   dedup: {
     cooldownDays: num(process.env.DEDUP_COOLDOWN_DAYS, 3),
   },
+  filter: {
+    onlyKnownPerfumes: bool(process.env.ONLY_KNOWN_PERFUMES, true),
+  },
   store: {
     file: process.env.STORE_FILE ?? './data/posted.json',
   },
@@ -129,6 +141,8 @@ export const config: Config = {
     siteId: process.env.ML_SITE_ID ?? 'MLB',
     searchTerms: mlTerms.length ? mlTerms : ['casa', 'eletronicos', 'eletrodomesticos', 'beleza'],
     minDiscountPercent: num(process.env.ML_MIN_DISCOUNT_PERCENT, 15),
+    minRating: num(process.env.ML_MIN_RATING, 4.0),
+    hubPagesPerTerm: num(process.env.ML_HUB_PAGES_PER_TERM, 1),
     linkMode: (process.env.ML_LINK_MODE ?? 'matt').toLowerCase() === 'simple' ? 'simple' : 'matt',
     mattWord: process.env.ML_MATT_WORD ?? '',
     mattTool: process.env.ML_MATT_TOOL ?? '',

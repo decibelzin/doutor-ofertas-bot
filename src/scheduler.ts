@@ -5,8 +5,10 @@ import { store } from './core/store';
 import { collectNicheDeals } from './core/selector';
 import { loadNiches, type Niche } from './core/niches';
 import { formatDeal } from './format/whatsapp';
+import { resolvePreset } from './format/title';
+import { isInBank } from './format/perfumes';
 import { whenReady } from './whatsapp/client';
-import { sendToGroup, buildLinkPreview } from './whatsapp/sender';
+import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
@@ -41,12 +43,23 @@ function capReached(): boolean {
   return false;
 }
 
+/** O perfume é "conhecido" (fichado ou casado no banco Fragrantica)? */
+function isKnownPerfume(deal: Deal): boolean {
+  return resolvePreset(deal.title, deal.id) !== null || isInBank(deal.title);
+}
+
 /** Melhor oferta do nicho ainda não postada dentro do cooldown (ou null). */
 async function pickNicheDeal(niche: Niche): Promise<Deal | null> {
   const cooldownMs = config.dedup.cooldownDays * DAY_MS;
   const deals = await collectNicheDeals(niche);
   for (const deal of deals) {
-    if (!store.wasPostedRecently(deal.id, cooldownMs)) return deal;
+    if (store.wasPostedRecently(deal.id, cooldownMs)) continue;
+    // Filtro de qualidade: só posta perfume conhecido (ou fichado).
+    if (config.filter.onlyKnownPerfumes && !isKnownPerfume(deal)) {
+      logger.debug({ title: deal.title }, '[Scheduler] Pulado — perfume desconhecido no banco.');
+      continue;
+    }
+    return deal;
   }
   return null;
 }
@@ -72,15 +85,17 @@ export async function postNiche(
   // Troca o link do ML pelo curto (meli.la) quando disponível; senão mantém o matt.
   await enrichWithShortLink(deal);
 
-  // Monta a prévia de link (card clicável) uma vez — mesma pra todos os grupos.
-  const preview = await buildLinkPreview(deal);
+  // Baixa a imagem uma vez — reusada em todos os grupos do nicho. Usa a imagem
+  // da ficha curada (se houver) senão a do anúncio. Foto grande + legenda.
+  const preset = resolvePreset(deal.title, deal.id);
+  const image = await fetchDealImage(deal, preset?.imagem);
 
   const sock = await whenReady();
   for (let i = 0; i < niche.groups.length; i += 1) {
     const groupId = niche.groups[i]!;
     const text = formatDeal(deal, { variant: i });
     try {
-      await sendToGroup(sock, groupId, text, preview);
+      await sendToGroup(sock, groupId, text, image);
       store.markPosted(deal, groupId);
       logger.info({ niche: niche.name, groupId, id: deal.id, title: deal.title }, '[Scheduler] Oferta postada.');
     } catch (err) {

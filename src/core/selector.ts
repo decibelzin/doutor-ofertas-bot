@@ -5,6 +5,7 @@ import type { Deal } from './deal';
 import * as mercadolivre from '../providers/mercadolivre';
 import * as shopee from '../providers/shopee';
 import { fetchOfertasForCategories } from '../providers/mercadolivre/ofertas';
+import { fetchHubDeals, hubEnabled } from '../providers/mercadolivre/hub';
 import { fetchDealsForKeywords as shopeeByKeywords } from '../providers/shopee';
 import type { Niche } from './niches';
 
@@ -66,6 +67,7 @@ export async function collectRankedDeals(): Promise<Deal[]> {
  */
 export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
   const minDiscount = niche.minDiscountPercent ?? config.mercadoLivre.minDiscountPercent;
+  const minRating = niche.minRating ?? config.mercadoLivre.minRating;
   const all: Deal[] = [];
 
   if (config.shopee.enabled && niche.shopee?.keywords?.length) {
@@ -78,7 +80,17 @@ export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
 
   if (config.mercadoLivre.enabled) {
     try {
-      all.push(...(await fetchOfertasForCategories(niche.ml?.categories ?? [])));
+      // Fonte preferida: hub de afiliado por busca (catálogo inteiro, com avaliação).
+      // Sem hub/searchTerms, cai na página pública de ofertas por categoria.
+      let mlDeals: Deal[] = [];
+      if (hubEnabled() && niche.ml?.searchTerms?.length) {
+        mlDeals = await fetchHubDeals(niche.ml.searchTerms, { pagesPerTerm: config.mercadoLivre.hubPagesPerTerm });
+      }
+      // Sem hub, sem searchTerms, OU hub vazio (cookie/csrf expirado?) -> página de ofertas.
+      if (mlDeals.length === 0) {
+        mlDeals = await fetchOfertasForCategories(niche.ml?.categories ?? []);
+      }
+      all.push(...mlDeals);
     } catch (err) {
       logger.error({ err: (err as Error).message, niche: niche.name }, '[Selector] Erro ML');
     }
@@ -87,6 +99,8 @@ export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
   const seen = new Set<string>();
   const deals = all.filter((d) => {
     if (seen.has(d.id) || d.discountPercent < minDiscount) return false;
+    // Filtra por avaliação só quando a fonte fornece (hub tem; ofertas não).
+    if (minRating > 0 && d.rating != null && d.rating < minRating) return false;
     seen.add(d.id);
     return true;
   });

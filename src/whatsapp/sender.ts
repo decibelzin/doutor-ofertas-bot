@@ -1,8 +1,7 @@
 import axios from 'axios';
-import type { WASocket, WAUrlInfo } from '@whiskeysockets/baileys';
+import type { WASocket } from '@whiskeysockets/baileys';
 import { config } from '../config';
 import { logger } from '../logger';
-import { formatMoney } from '../format/whatsapp';
 import { randomDelay, sleep } from '../util/time';
 import type { Deal } from '../core/deal';
 
@@ -11,6 +10,9 @@ export interface GroupInfo {
   subject: string;
   size: number;
 }
+
+const UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0';
 
 /**
  * Lista todos os grupos em que a conta do bot participa (id + nome + tamanho).
@@ -24,51 +26,71 @@ export async function listGroups(sock: WASocket): Promise<GroupInfo[]> {
 }
 
 /**
- * Monta a PRÉVIA DE LINK (card clicável) a partir da oferta: título + preço na
- * descrição + imagem do produto como thumbnail. É isso que faz o link virar
- * hyperlink azul e tappável no WhatsApp (em vez de texto solto).
- *
- * O `matched-text` precisa bater com a URL que aparece no texto da mensagem.
+ * ML serve a MESMA imagem em .jpg (WhatsApp lida melhor com JPEG que WEBP) e
+ * numa resolução maior (D_NQ_NP_ = pequena → D_NQ_NP2X_ = 2x). Melhor esforço:
+ * se a variante maior não existir, o chamador cai na URL original.
  */
-export async function buildLinkPreview(deal: Deal): Promise<WAUrlInfo> {
-  const url = deal.affiliateUrl;
-  const info: WAUrlInfo = {
-    'canonical-url': url,
-    'matched-text': url,
-    title: deal.title.slice(0, 90),
-    description:
-      deal.priceOriginal && deal.priceOriginal > deal.priceNow
-        ? `De R$ ${formatMoney(deal.priceOriginal)} por R$ ${formatMoney(deal.priceNow)} · ${deal.discountPercent}% OFF`
-        : `R$ ${formatMoney(deal.priceNow)}`,
-  };
-
-  if (deal.imageUrl) {
-    try {
-      // ML serve .jpg na mesma URL; WhatsApp quer thumbnail JPEG.
-      const jpgUrl = deal.imageUrl.replace(/\.webp(\?.*)?$/i, '.jpg');
-      const { data } = await axios.get<ArrayBuffer>(jpgUrl, {
-        responseType: 'arraybuffer',
-        timeout: 10000,
-      });
-      info.jpegThumbnail = Buffer.from(data);
-    } catch (err) {
-      logger.debug({ err: (err as Error).message }, '[WhatsApp] Sem thumbnail no preview.');
-    }
-  }
-  return info;
+function upgradeMlImageUrl(url: string): string {
+  return url
+    .replace(/\.webp(\?.*)?$/i, '.jpg$1')
+    // Sobe pra 2X SÓ se ainda não for — senão "D_NQ_NP_2X_" (imagem do hub) viraria
+    // "D_NQ_NP2X_2X_", que o ML devolve como GIF placeholder quebrado.
+    .replace(/D_NQ_NP_(?!2X_)/, 'D_NQ_NP2X_');
 }
 
 /**
- * Envia uma mensagem de texto para UM grupo, com prévia de link (card clicável)
- * quando fornecida.
+ * Baixa os bytes da imagem do produto UMA vez (reusada em todos os grupos do
+ * nicho). É isso que faz a mensagem sair como as das referências: FOTO GRANDE
+ * em cima + legenda embaixo, com o link clicável dentro da legenda.
+ *
+ * Retorna null se não houver imagem ou o download falhar — aí cai no texto puro
+ * (que o WhatsApp já deixa clicável por conta própria).
+ */
+export async function fetchDealImage(deal: Deal, imageOverride?: string | null): Promise<Buffer | null> {
+  // Imagem da ficha curada tem prioridade; senão usa a do anúncio.
+  if (imageOverride) return fetchImage([imageOverride]);
+  if (!deal.imageUrl) return null;
+
+  const candidates =
+    deal.store === 'mercadolivre'
+      ? Array.from(new Set([upgradeMlImageUrl(deal.imageUrl), deal.imageUrl]))
+      : [deal.imageUrl];
+  return fetchImage(candidates);
+}
+
+/** Tenta baixar a primeira URL que responder; null se todas falharem. */
+async function fetchImage(candidates: string[]): Promise<Buffer | null> {
+  for (const url of candidates) {
+    try {
+      const { data } = await axios.get<ArrayBuffer>(url, {
+        responseType: 'arraybuffer',
+        timeout: 10000,
+        headers: { 'User-Agent': UA },
+      });
+      return Buffer.from(data);
+    } catch (err) {
+      logger.debug({ url, err: (err as Error).message }, '[WhatsApp] Falha ao baixar imagem, tentando fallback.');
+    }
+  }
+  return null;
+}
+
+/**
+ * Envia uma oferta para UM grupo. Quando há imagem, sai como MENSAGEM DE IMAGEM
+ * com legenda (foto grande + link clicável na legenda). Sem imagem, cai no
+ * texto puro — a URL continua clicável.
  */
 export async function sendToGroup(
   sock: WASocket,
   groupId: string,
   text: string,
-  preview?: WAUrlInfo | null
+  image?: Buffer | null
 ): Promise<void> {
-  await sock.sendMessage(groupId, { text, linkPreview: preview ?? null });
+  if (image) {
+    await sock.sendMessage(groupId, { image, caption: text });
+  } else {
+    await sock.sendMessage(groupId, { text });
+  }
 }
 
 /**
@@ -80,14 +102,14 @@ export async function broadcast(
   sock: WASocket,
   groupIds: string[],
   text: string,
-  preview?: WAUrlInfo | null
+  image?: Buffer | null
 ): Promise<string[]> {
   const ok: string[] = [];
 
   for (let i = 0; i < groupIds.length; i += 1) {
     const groupId = groupIds[i]!;
     try {
-      await sendToGroup(sock, groupId, text, preview);
+      await sendToGroup(sock, groupId, text, image);
       ok.push(groupId);
       logger.info({ groupId }, '[WhatsApp] Mensagem enviada.');
     } catch (err) {

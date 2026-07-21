@@ -18,10 +18,13 @@ import { logger } from '../logger';
 export interface Niche {
   name: string;
   groups: string[];
-  ml?: { categories?: string[] };
+  /** ML: `searchTerms` puxa do hub de afiliado (catálogo inteiro); `categories` é o fallback da página de ofertas. */
+  ml?: { categories?: string[]; searchTerms?: string[] };
   shopee?: { keywords?: string[] };
   /** Override opcional do desconto mínimo do nicho. */
   minDiscountPercent?: number;
+  /** Override opcional da avaliação mínima (0–5). */
+  minRating?: number;
   /** Override opcional do intervalo (min) entre posts deste nicho. */
   intervalMinutes?: number;
 }

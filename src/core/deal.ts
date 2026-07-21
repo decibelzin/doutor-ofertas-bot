@@ -23,6 +23,8 @@ export interface Deal {
   productUrl: string | null;
   /** Comissão estimada em % (usada no ranking), se disponível. */
   commissionRate: number | null;
+  /** Avaliação do produto (0–5), quando a fonte fornece. Usada pra filtrar bem-avaliados. */
+  rating: number | null;
   /** Termo/categoria que encontrou a oferta. */
   category: string | null;
   /** Epoch ms de quando foi coletada. */
@@ -41,6 +43,7 @@ export interface RawDeal {
   affiliateUrl?: string | null;
   productUrl?: string | null;
   commissionRate?: number | string | null;
+  rating?: number | string | null;
   category?: string | null;
   fetchedAt?: number;
 }
@@ -89,6 +92,7 @@ export function makeDeal(raw: RawDeal): Deal | null {
     affiliateUrl,
     productUrl: raw.productUrl ?? null,
     commissionRate: toNumberOrNull(raw.commissionRate),
+    rating: toNumberOrNull(raw.rating),
     category: raw.category ?? null,
     fetchedAt: raw.fetchedAt ?? Date.now(),
   };
