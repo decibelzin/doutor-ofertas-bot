@@ -13,7 +13,8 @@
     "send-test": "tsx src/cli/send-test.ts",
     "ml-auth": "tsx src/cli/ml-auth.ts",
     "fetch": "tsx src/cli/fetch.ts",
-    "post-now": "tsx src/cli/post-now.ts"
+    "post-now": "tsx src/cli/post-now.ts",
+    "ml-link": "tsx src/cli/ml-link.ts"
   },
   "engines": {
     "node": ">=20"

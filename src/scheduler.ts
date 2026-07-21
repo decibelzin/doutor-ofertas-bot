@@ -7,6 +7,7 @@ import { loadNiches, type Niche } from './core/niches';
 import { formatDeal } from './format/whatsapp';
 import { whenReady } from './whatsapp/client';
 import { sendToGroup } from './whatsapp/sender';
+import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -67,6 +68,9 @@ export async function postNiche(
     logger.warn({ niche: niche.name }, '[Scheduler] Nenhuma oferta nova nesta rodada.');
     return;
   }
+
+  // Troca o link do ML pelo curto (meli.la) quando disponível; senão mantém o matt.
+  await enrichWithShortLink(deal);
 
   const sock = await whenReady();
   for (let i = 0; i < niche.groups.length; i += 1) {

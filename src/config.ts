@@ -68,6 +68,10 @@ export interface Config {
     mattWord: string;
     mattTool: string;
     simpleTag: string;
+    // Link curto oficial (meli.la) via endpoint interno createLink.
+    // Cookie de sessão + x-csrf-token capturados do painel de afiliado.
+    affiliateCookie: string;
+    affiliateCsrf: string;
   };
 }
 
@@ -129,5 +133,7 @@ export const config: Config = {
     mattWord: process.env.ML_MATT_WORD ?? '',
     mattTool: process.env.ML_MATT_TOOL ?? '',
     simpleTag: process.env.ML_SIMPLE_TAG ?? '',
+    affiliateCookie: process.env.ML_AFFILIATE_COOKIE ?? '',
+    affiliateCsrf: process.env.ML_AFFILIATE_CSRF ?? '',
   },
 };
