@@ -39,9 +39,10 @@ export async function connectWhatsApp(): Promise<WASocket> {
     auth: state,
     printQRInTerminal: false,
     markOnlineOnConnect: false,
-    // Baileys usa um logger pino-compatível; passamos o nosso em nível 'warn'
-    // pra não poluir o terminal com o ruído interno da lib.
-    logger: logger.child({ module: 'baileys' }, { level: 'warn' }) as never,
+    // Baileys usa um logger pino-compatível; deixamos em 'silent' — a lib faz
+    // "init queries" em segundo plano que às vezes dão timeout (408) inofensivo,
+    // e nós já logamos o que importa (conexão, envio, falhas) por conta própria.
+    logger: logger.child({ module: 'baileys' }, { level: 'silent' }) as never,
   });
 
   sock.ev.on('creds.update', saveCreds);
