@@ -1,15 +1,19 @@
 /**
- * Entry point. Fase 1 (só WhatsApp): conecta e mantém a sessão viva.
- * O agendamento de ofertas e os providers entram nas próximas fases.
+ * Entry point do bot. Conecta no WhatsApp e inicia o agendador, que a cada
+ * ~POST_INTERVAL_MINUTES (com jitter) posta a próxima oferta nos grupos,
+ * dentro da janela de horário.
  */
 import { connectWhatsApp, whenReady } from './whatsapp/client';
+import { startScheduler } from './scheduler';
 import { logger } from './logger';
 
 async function main(): Promise<void> {
-  logger.info('Iniciando doutor-ofertas-bot (Fase 1: WhatsApp)...');
+  logger.info('Iniciando doutor-ofertas-bot...');
   await connectWhatsApp();
   await whenReady();
-  logger.info('Bot conectado e em execução. (Agendador de ofertas: próxima fase.)');
+  logger.info('WhatsApp conectado. Iniciando agendador de ofertas.');
+  startScheduler();
+  logger.info('Bot em execução. Ctrl+C para encerrar.');
 }
 
 main().catch((err) => {
