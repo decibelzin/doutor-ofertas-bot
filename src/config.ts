@@ -43,6 +43,17 @@ export interface Config {
   store: {
     file: string;
   };
+  shopee: {
+    enabled: boolean;
+    appId: string;
+    appSecret: string;
+    graphqlEndpoint: string;
+    searchTerms: string[];
+    minDiscountPercent: number;
+    sortType: number;
+    limitPerTerm: number;
+    fallbackCoupon: string;
+  };
   mercadoLivre: {
     enabled: boolean;
     clientId: string;
@@ -61,6 +72,9 @@ export interface Config {
 }
 
 const mlTerms = list(process.env.ML_SEARCH_TERMS);
+const shopeeAppId = process.env.SHOPEE_APP_ID ?? '';
+const shopeeAppSecret = process.env.SHOPEE_APP_SECRET ?? '';
+const shopeeTerms = list(process.env.SHOPEE_SEARCH_TERMS);
 
 export const config: Config = {
   logLevel: process.env.LOG_LEVEL ?? 'info',
@@ -86,6 +100,21 @@ export const config: Config = {
   },
   store: {
     file: process.env.STORE_FILE ?? './data/posted.json',
+  },
+  shopee: {
+    // Habilitado quando há credenciais Open API.
+    enabled: Boolean(shopeeAppId && shopeeAppSecret),
+    appId: shopeeAppId,
+    appSecret: shopeeAppSecret,
+    graphqlEndpoint:
+      process.env.SHOPEE_GRAPHQL_ENDPOINT ?? 'https://open-api.affiliate.shopee.com.br/graphql',
+    searchTerms: shopeeTerms.length
+      ? shopeeTerms
+      : ['casa', 'eletronicos', 'eletrodomesticos', 'beleza', 'moveis'],
+    minDiscountPercent: num(process.env.SHOPEE_MIN_DISCOUNT_PERCENT, 20),
+    sortType: num(process.env.SHOPEE_SORT_TYPE, 5),
+    limitPerTerm: num(process.env.SHOPEE_LIMIT_PER_TERM, 20),
+    fallbackCoupon: process.env.SHOPEE_FALLBACK_COUPON ?? '',
   },
   mercadoLivre: {
     enabled: bool(process.env.ML_ENABLED, false),

@@ -3,7 +3,7 @@ import { logger } from '../logger';
 import type { Deal } from './deal';
 
 import * as mercadolivre from '../providers/mercadolivre';
-// Fase Shopee: import * as shopee from '../providers/shopee';
+import * as shopee from '../providers/shopee';
 
 interface Provider {
   name: string;
@@ -13,8 +13,8 @@ interface Provider {
 /** Providers ativos conforme o .env. */
 export function enabledProviders(): Provider[] {
   const providers: Provider[] = [];
+  if (config.shopee.enabled) providers.push(shopee);
   if (config.mercadoLivre.enabled) providers.push(mercadolivre);
-  // if (config.shopee.enabled) providers.push(shopee);
   return providers;
 }
 
