@@ -40,6 +40,12 @@ export interface Config {
   dedup: {
     cooldownDays: number;
   };
+  coupon: {
+    // Caminho da imagem-banner do cupom (fixa, reusada). Vazio = manda só texto.
+    bannerPath: string;
+    // Link de busca opcional no rodapé do cupom (ex.: meli.la/...).
+    searchLink: string;
+  };
   filter: {
     // Só postar perfume que a gente casa no banco (Fragrantica) OU que está fichado.
     // Corta marca no-name e produto obscuro. Ligado por padrão.
@@ -110,6 +116,10 @@ export const config: Config = {
   },
   dedup: {
     cooldownDays: num(process.env.DEDUP_COOLDOWN_DAYS, 3),
+  },
+  coupon: {
+    bannerPath: process.env.COUPON_BANNER_PATH ?? '',
+    searchLink: process.env.COUPON_SEARCH_LINK ?? '',
   },
   filter: {
     onlyKnownPerfumes: bool(process.env.ONLY_KNOWN_PERFUMES, true),

@@ -94,6 +94,55 @@ export async function sendToGroup(
 }
 
 /**
+ * Envia pra UM grupo mencionando TODOS os participantes (o "@all"). É isso que
+ * dispara notificação pra todo mundo — o texto "@all" é só cosmético; quem
+ * notifica é o array `mentions` com os JIDs dos participantes. Usado no cupom.
+ */
+export async function sendMentioningAll(
+  sock: WASocket,
+  groupId: string,
+  text: string,
+  image?: Buffer | null
+): Promise<void> {
+  let mentions: string[] = [];
+  try {
+    const meta = await sock.groupMetadata(groupId);
+    mentions = (meta.participants ?? []).map((p) => p.id);
+  } catch (err) {
+    logger.debug({ err: (err as Error).message, groupId }, '[WhatsApp] Sem metadata do grupo — enviando sem @all.');
+  }
+  const content = image ? { image, caption: text, mentions } : { text, mentions };
+  await sock.sendMessage(groupId, content as never);
+}
+
+/**
+ * Broadcast de CUPOM: mesma mensagem pra vários grupos, mencionando @all em cada,
+ * com delay anti-ban. Use com moderação (@all frequente irrita e arrisca ban).
+ */
+export async function broadcastCoupon(
+  sock: WASocket,
+  groupIds: string[],
+  text: string,
+  image?: Buffer | null
+): Promise<string[]> {
+  const ok: string[] = [];
+  for (let i = 0; i < groupIds.length; i += 1) {
+    const groupId = groupIds[i]!;
+    try {
+      await sendMentioningAll(sock, groupId, text, image);
+      ok.push(groupId);
+      logger.info({ groupId }, '[WhatsApp] Cupom enviado (@all).');
+    } catch (err) {
+      logger.error({ err: (err as Error).message, groupId }, '[WhatsApp] Falha ao enviar cupom.');
+    }
+    if (i < groupIds.length - 1) {
+      await sleep(randomDelay(config.throttle.groupDelayMinMs, config.throttle.groupDelayMaxMs));
+    }
+  }
+  return ok;
+}
+
+/**
  * Envia a mesma mensagem para vários grupos, com delay aleatório entre eles
  * (anti-ban). Usado pelo comando de teste (send-test).
  * @returns a lista de grupos para os quais o envio deu certo.

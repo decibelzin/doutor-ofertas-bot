@@ -15,6 +15,7 @@
     "fetch": "tsx src/cli/fetch.ts",
     "post-now": "tsx src/cli/post-now.ts",
     "update-perfumes": "tsx src/cli/update-perfumes.ts",
+    "post-coupon": "tsx src/cli/post-coupon.ts",
     "ml-link": "tsx src/cli/ml-link.ts"
   },
   "engines": {
