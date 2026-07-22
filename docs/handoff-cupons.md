@@ -46,6 +46,37 @@ de cupom hoje é **`3799.<hash>.js`** (achar via `coupon-probe.ts bundle` → l�
 - `src/cli/post-coupon.ts` → `npm run post-coupon -- CODIGO "descrição"`: posta cupom **manual** com @all + banner. Config: `COUPON_BANNER_PATH`, `COUPON_SEARCH_LINK` (em `config.coupon`).
 - ⚠️ **@all**: o "ghost mention" (só `mentions`, sem `@numero` no texto) **NÃO notificou** no teste do usuário. Pusemos "@all" literal no texto (cosmético). Pra notificar de verdade no WhatsApp atual talvez precise dos `@<numero>` no texto — o que **não cabe** em grupo grande (limite ~4096 chars) e é sinal de spam/ban. **@all não escala pra grupo grande.**
 
+## ✅ Sessão 4 (2026-07-22) — FEATURE CONSTRUÍDA (descoberta + postagem automáticas)
+O fluxo de "desconto duplo" (perfume + cupom automático, igual aos concorrentes) está **implementado,
+testado e revisado**. `create-code` confirmado irrelevante (todos os ~200 cupons amostrados são
+`PRODUCT_DISCOUNT`, aplicação automática — POST `/create-code` dá 400 pra toda chave; é mecanismo de
+campanha que essa conta não tem).
+
+**Módulos novos (branch `cupons/descoberta-e-postagem`):**
+- `src/providers/mercadolivre/coupons.ts` — biblioteca: `sweepCouponList` (varre a lista, resumível),
+  `sellerLooksPerfumery` (watchlist: padrões `perfum|fragran|essenc|arom|scent|beleza|cosmet|import` +
+  marcas, INCLUINDO árabes — match por palavra inteira, `brandPresent`), `resolveCouponSearchUrl`,
+  `scrapeCouponProducts` (reusa `parseOfertasHtml`; retry; `AuthWallError` no muro), `isPerfumeProduct`
+  (keyword de perfume; corta maquiagem/cabelo via `NON_PERFUME_KW`; senão banco/marca), `parseTerms`
+  (compra mín. + teto), `discoverFromCoupons` (→ `DiscoverResult` com `authFailed`).
+- `src/cli/discover-coupons.ts` — `npm run discover-coupons [maxPages]` → varre → cache
+  `data/perfume-coupons.json`. Resumível (`data/coupon-sweep.json`, TTL 24h), escopo real por páginas,
+  escrita atômica, **guarda que NÃO sobrescreve cache bom quando a auth cai**.
+- `src/format/coupon.ts` + `src/cli/post-perfume-coupon.ts` — `npm run post-perfume-coupon [couponId] [--dry]`:
+  post premium (foto+legenda) com preço final estimado **só quando o teto é conhecido** (label mostra
+  desconto efetivo `−R$ X` quando o teto binda), dedup por cooldown, expiração em fuso BR. Post normal
+  (sem @all), igual ao print do concorrente.
+
+**Validado:** discover em 10 págs achou Perfumes_bhz 20% (4/4) e Mawwal 5% (árabe, 41/43); dry-run
+renderiza a mensagem certa com link meli.la real. **Review adversarial (workflow, 4 dimensões) achou 12
+bugs — todos corrigidos** (preço enganoso sem teto, batom entrando como perfume, `parseOfertasHtml`
+dropando anúncio de vendedor com hífen, sobrescrita de cache vazio na queda de auth, fuso da expiração,
+etc.).
+
+**Falta só:** (1) rodar a **varredura completa** (507 págs) 1x pra popular o cache — em andamento;
+(2) o usuário **validar comissão** com 1 clique/compra real; (3) opcional: agendar `discover-coupons`
+(semanal) e decidir se `post-perfume-coupon` entra no scheduler ou fica manual.
+
 ## 🚨 Sessão 3b (2026-07-22) — VIRADA DE CHAVE: cupons são AUTOMÁTICOS, `create-code` é irrelevante
 **A pergunta "qual o body do `create-code`?" era a pergunta errada.** O `coupon-terms` do cupom
 Perfumes_bhz diz textualmente: *"O cupom será aplicado **automaticamente** no carrinho elegível, **sem
