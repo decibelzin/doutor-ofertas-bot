@@ -16,7 +16,6 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { config } from '../config';
 import { logger } from '../logger';
 import {
   couponsEnabled,
@@ -54,10 +53,29 @@ function loadSweep(): SweepState | undefined {
   }
 }
 
-function saveSweep(s: SweepState): void {
-  fs.mkdirSync(path.dirname(SWEEP_FILE), { recursive: true });
-  fs.writeFileSync(SWEEP_FILE, JSON.stringify({ ...s, savedAt: Date.now() }, null, 2));
+/** Escrita atômica (temp + rename) — leitor concorrente nunca vê JSON truncado. */
+function writeAtomic(file: string, data: string): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, file);
 }
+
+function saveSweep(s: SweepState): void {
+  writeAtomic(SWEEP_FILE, JSON.stringify({ ...s, savedAt: Date.now() }, null, 2));
+}
+
+/** Nº de cupons já no cache atual (pra decidir se vale sobrescrever). */
+function existingCacheCount(): number {
+  try {
+    const raw = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) as CacheFile;
+    return raw.coupons?.length ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+const COUPONS_PER_PAGE = 14;
 
 async function main(): Promise<void> {
   if (!couponsEnabled()) {
@@ -84,41 +102,55 @@ async function main(): Promise<void> {
     '[discover] Varredura concluída.'
   );
 
+  // Escopo da descoberta = só os cupons das primeiras `maxPages` páginas. Sem
+  // isso, um `-- 40` sobre um sweep completo salvo processaria TODOS os ~7000
+  // (o oposto do teste leve). slice largo = tudo, no run completo.
+  const scope = sweep.coupons.slice(0, maxPages * COUPONS_PER_PAGE);
+
   // 2–4) Filtra perfumaria, resolve+raspa candidatos, classifica.
-  logger.info('[discover] Resolvendo + raspando candidatos de perfumaria...');
-  let scraped = 0;
-  const perfumeCoupons = await discoverFromCoupons(sweep.coupons, {
+  logger.info({ escopo: scope.length }, '[discover] Resolvendo + raspando candidatos de perfumaria...');
+  let logged = 0;
+  const result = await discoverFromCoupons(scope, {
     onCandidate: (info) => {
-      scraped += 1;
+      logged += 1;
       logger.info(
         { seller: info.seller, cupom: info.couponId, perfume: info.perfumeCount, total: info.total, mantido: info.kept },
-        `[discover] candidato ${scraped}`
+        `[discover] candidato ${logged}`
       );
     },
   });
 
+  // GUARDA: não sobrescreve um cache bom com vazio quando a auth caiu no meio
+  // (ou quando 0 achados coexistem com erros). Cache velho é melhor que zerado.
+  const prior = existingCacheCount();
+  if (result.coupons.length === 0 && (result.authFailed || result.errors > 0) && prior > 0) {
+    logger.error(
+      { authFailed: result.authFailed, errors: result.errors, cacheAntigo: prior },
+      '[discover] Descoberta degradou (auth/erros) e não achou nada — PRESERVANDO o cache anterior.'
+    );
+    process.exit(1);
+  }
+
   const cache: CacheFile = {
     generatedAt: new Date().toISOString(),
-    totalSwept: sweep.coupons.length,
-    candidatesScraped: scraped,
-    coupons: perfumeCoupons,
+    totalSwept: scope.length,
+    candidatesScraped: result.candidates,
+    coupons: result.coupons,
   };
-  fs.mkdirSync(path.dirname(CACHE_FILE), { recursive: true });
-  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2));
+  writeAtomic(CACHE_FILE, JSON.stringify(cache, null, 2));
 
   logger.info(
-    { cuponsPerfume: perfumeCoupons.length, arquivo: CACHE_FILE },
+    { cuponsPerfume: result.coupons.length, candidatos: result.candidates, erros: result.errors, arquivo: CACHE_FILE },
     '[discover] Cache de cupons de perfumaria gravado.'
   );
   console.log('\n===== CUPONS DE PERFUMARIA DESCOBERTOS =====');
-  for (const c of perfumeCoupons) {
+  for (const c of result.coupons) {
     console.log(
       `${c.title.padEnd(10)} ${c.seller.padEnd(24)} perfumes=${c.perfumeCount}/${c.totalProducts} exp=${c.expiration.slice(0, 10)} (cupom ${c.couponId})`
     );
     for (const p of c.products.slice(0, 3)) console.log(`    - ${p.title.slice(0, 60)}`);
   }
-  if (perfumeCoupons.length === 0) console.log('(nenhum — tente aumentar o range de páginas ou revisar a watchlist)');
-  console.log(`\nBanner do post: ${config.coupon.bannerPath || '(não configurado)'}`);
+  if (result.coupons.length === 0) console.log('(nenhum — tente aumentar o range de páginas ou revisar a watchlist)');
   process.exit(0);
 }
 

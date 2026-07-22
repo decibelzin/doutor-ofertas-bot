@@ -48,8 +48,11 @@ export function parseOfertasHtml(html: string): Deal[] {
     const linkEl = card.find('a[href*="/p/MLB"], a[href*="/MLB-"]').first();
     const href = linkEl.attr('href') || '';
     const cleanUrl = href.split('?')[0].split('#')[0];
-    const idMatch = cleanUrl.match(/(MLB\d+)/);
+    // Catálogo: /p/MLB12345678. Anúncio de vendedor: /MLB-1234567890-nome (com
+    // hífen) — comum nas lojas árabes/nacionais dos cupons; o `-?` tolera os dois.
+    const idMatch = cleanUrl.match(/MLB-?(\d+)/);
     if (!idMatch) return;
+    const mlbId = `MLB${idMatch[1]}`;
 
     const title = card.find('.poly-component__title').first().text().trim() || linkEl.text().trim();
     const priceBox = card.find('.poly-component__price');
@@ -65,7 +68,7 @@ export function parseOfertasHtml(html: string): Deal[] {
     );
 
     const deal = makeDeal({
-      id: `mercadolivre:${idMatch[1]}`,
+      id: `mercadolivre:${mlbId}`,
       store: 'mercadolivre',
       title,
       priceNow,

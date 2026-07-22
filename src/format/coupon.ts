@@ -37,25 +37,31 @@ function price(value: number): string {
   });
 }
 
-/** dd/MM da data de expiração (ou null se não parsear). */
+/**
+ * dd/MM da data de expiração. O ML manda a validade como timestamp INGÊNUO em
+ * UTC (ex.: "2026-08-01T02:59:59" = 31/07 23:59 no Brasil); interpreta como UTC
+ * e exibe no fuso configurado, senão a data sai 1 dia adiantada.
+ */
 function shortDate(iso: string): string | null {
-  const dt = DateTime.fromISO(iso);
+  const dt = DateTime.fromISO(iso, { zone: 'utc' }).setZone(config.timezone);
   return dt.isValid ? dt.toFormat('dd/MM') : null;
 }
 
 /**
- * Preço final estimado APÓS o cupom automático, respeitando compra mínima e teto
- * de desconto. Retorna null quando não dá pra estimar com segurança (ex.: cupom
- * de R$ fixo sem % , ou produto abaixo da compra mínima).
+ * Preço final estimado APÓS o cupom automático. Retorna null quando NÃO dá pra
+ * estimar com segurança — de propósito, pra nunca anunciar preço enganoso:
+ *  - produto abaixo da compra mínima;
+ *  - cupom de % sem TETO conhecido (terms ausente) — sem o teto o desconto
+ *    poderia ser bem menor que o % cheio, e mostraríamos um preço baixo demais.
  */
 export function estimateFinalPrice(deal: Deal, coupon: PerfumeCoupon): number | null {
   const min = coupon.terms?.minPurchase ?? null;
-  if (min !== null && deal.priceNow < min) return null; // não atinge a compra mínima
+  if (min !== null && deal.priceNow < min) return null;
 
   if (coupon.discountPercent !== null) {
-    let discount = deal.priceNow * (coupon.discountPercent / 100);
     const cap = coupon.terms?.maxDiscount ?? null;
-    if (cap !== null) discount = Math.min(discount, cap);
+    if (cap === null) return null; // sem teto conhecido → não arrisca
+    const discount = Math.min(deal.priceNow * (coupon.discountPercent / 100), cap);
     return Math.max(0, deal.priceNow - discount);
   }
   if (coupon.discountAmount !== null) {
@@ -101,11 +107,24 @@ export function formatPerfumeCoupon(
     blocks.push(`*R$ ${price(deal.priceNow)}*`);
   }
 
-  // Linha do cupom automático + preço final estimado.
-  const label = couponDiscountLabel(coupon);
+  // Linha do cupom automático. Quando dá pra estimar o preço final, mostra o
+  // desconto EFETIVO (após teto) casado com o preço final — nunca "+50%" ao lado
+  // de um preço que reflete só R$ 30 de teto. Sem estimativa segura, mostra só o
+  // desconto nominal do cupom, sem preço final (evita número enganoso).
   const final = estimateFinalPrice(deal, coupon);
-  const arrow = final !== null ? ` → *R$ ${price(final)}*` : '';
-  blocks.push(`🎟️ *+${label} no carrinho* (cupom automático)${arrow}`);
+  if (final !== null) {
+    const off = deal.priceNow - final;
+    const nominalOff =
+      coupon.discountPercent !== null
+        ? deal.priceNow * (coupon.discountPercent / 100)
+        : coupon.discountAmount;
+    const capped = nominalOff !== null && off < nominalOff - 0.01;
+    const label =
+      coupon.discountPercent !== null && !capped ? `+${coupon.discountPercent}%` : `−R$ ${price(off)}`;
+    blocks.push(`🎟️ *${label} no carrinho* (cupom automático) → *R$ ${price(final)}*`);
+  } else {
+    blocks.push(`🎟️ *+${couponDiscountLabel(coupon)} no carrinho* (cupom automático)`);
+  }
 
   // Condições em itálico (validade + compra mínima), discreto.
   const cond: string[] = ['produtos selecionados'];

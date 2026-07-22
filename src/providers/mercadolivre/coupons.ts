@@ -103,6 +103,14 @@ const PERFUME_KEYWORD =
   /\b(perfum|parfum|eau de|\bedt\b|\bedp\b|col[oô]nia|fragr[aâ]ncia|body spray|deo[\s-]?col)\b/i;
 
 /**
+ * Categorias que NÃO são perfume mas casam marca/banco de perfumaria (ex.: o
+ * "Batom Eudora" casa a marca Eudora). Sem esse corte, maquiagem/cabelo/pele da
+ * mesma marca entraria na fila de post rotulada como perfume (ver handoff).
+ */
+const NON_PERFUME_KW =
+  /\b(batom|gloss|corretivo|r[ií]mel|m[aá]scara de c[ií]lios|delineador|sombra|blush|p[oó] compacto|p[oó] facial|base l[ií]quida|esmalte|shampoo|condicionador|sabonete|hidratante|body splash|creme|s[eé]rum|escova|pincel|kit maquiagem|maquiagem)\b/i;
+
+/**
  * Marcas/casas de perfume (inclui ÁRABES — decisão do usuário: incluir mesmo
  * fora do banco Fragrantica). Usadas tanto pra reconhecer PRODUTO quanto pra
  * reconhecer SELLER de perfumaria pelo nome.
@@ -120,19 +128,35 @@ const PERFUME_BRANDS = [
 /** Padrões de nome de SELLER que sugerem perfumaria. */
 const SELLER_PATTERNS = /(perfum|fragran|essenc|arom|scent|beleza|cosmet|import|parfum)/i;
 
+/**
+ * A marca aparece como PALAVRA/FRASE inteira no texto normalizado? Boundary por
+ * caractere não-alfanumérico — evita substring espúria (ex.: "avon" ⊄ "pavoni",
+ * que casava a loja de autopeças "Pavoni" com a marca Avon).
+ */
+function brandPresent(hayNorm: string, brand: string): boolean {
+  return new RegExp(`(?:^|[^a-z0-9])${norm(brand)}(?:[^a-z0-9]|$)`).test(hayNorm);
+}
+
 /** O NOME do seller sugere perfumaria? (filtro barato pré-raspagem.) */
 export function sellerLooksPerfumery(seller: string): boolean {
   const n = norm(seller);
   if (SELLER_PATTERNS.test(n)) return true;
-  return PERFUME_BRANDS.some((b) => n.includes(norm(b)));
+  return PERFUME_BRANDS.some((b) => brandPresent(n, b));
 }
 
-/** O TÍTULO do produto é de perfume? (keyword OU marca conhecida OU casa no banco.) */
+/**
+ * O TÍTULO do produto é de perfume?
+ *  1. keyword explícita de perfume (perfume/edp/edt/…) → sim (ganha de tudo);
+ *  2. keyword de maquiagem/cabelo/pele (batom/shampoo/…) → NÃO (corta o falso-positivo
+ *     de marca, ex.: "Batom Eudora" que casa a marca Eudora);
+ *  3. senão, casa no banco Fragrantica OU marca de perfume conhecida.
+ */
 export function isPerfumeProduct(title: string): boolean {
   if (PERFUME_KEYWORD.test(title)) return true;
+  if (NON_PERFUME_KW.test(title)) return false;
   if (isInBank(title)) return true;
   const n = norm(title);
-  return PERFUME_BRANDS.some((b) => n.includes(norm(b)));
+  return PERFUME_BRANDS.some((b) => brandPresent(n, b));
 }
 
 /** Extrai % ou R$ do título do cupom ("20% OFF" / "R$ 15 OFF"). */
@@ -184,7 +208,10 @@ export async function fetchCouponTerms(couponId: number): Promise<CouponTerms | 
 /** Extrai compra mínima, teto de desconto e se é auto-aplicável do texto. */
 export function parseTerms(raw: string): CouponTerms {
   const min = raw.match(/compras?\s+m[ií]nimas?[^R]*R\$\s*([\d.,]+)/i);
-  const max = raw.match(/[Mm][aá]ximo de desconto de\s*R\$\s*([\d.,]+)/i);
+  // Pega as duas ordens: "máximo de desconto de R$ X" e "desconto máximo de R$ X".
+  const max =
+    raw.match(/m[aá]ximo de desconto de\s*R\$\s*([\d.,]+)/i) ??
+    raw.match(/desconto m[aá]ximo (?:de\s*)?R\$\s*([\d.,]+)/i);
   const toNum = (s: string): number => Number(s.replace(/\./g, '').replace(',', '.'));
   return {
     raw,
@@ -194,27 +221,47 @@ export function parseTerms(raw: string): CouponTerms {
   };
 }
 
+/** Muro de verificação de conta = cookie do painel expirado. Erro PERMANENTE (não retenta). */
+export class AuthWallError extends Error {}
+
 /**
  * Raspa os produtos de um cupom. A listing é o MESMO HTML de /ofertas, então
  * reusa parseOfertasHtml. Exige o cookie (senão o ML joga pro muro
  * account-verification) e a URL SEM o `?coupon_campaign_id` (que causa 404 em
  * alguns containers; o conjunto de produtos é o mesmo sem ele).
+ *
+ * Retenta erros TRANSITÓRIOS (timeout/5xx); o muro de auth é permanente e sobe
+ * na hora (AuthWallError) pra o chamador abortar a rodada em vez de descartar
+ * cupons bons como se não fossem de perfume.
  */
-export async function scrapeCouponProducts(searchUrl: string): Promise<Deal[]> {
+export async function scrapeCouponProducts(
+  searchUrl: string,
+  { retries = 1, retryDelayMs = 1500 }: { retries?: number; retryDelayMs?: number } = {}
+): Promise<Deal[]> {
   const url = searchUrl.split('?')[0]!;
-  const res = await axios.get<string>(url, {
-    headers: { 'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9', Cookie: config.mercadoLivre.affiliateCookie },
-    timeout: 25000,
-    responseType: 'text',
-    validateStatus: () => true,
-    maxRedirects: 5,
-  });
-  const finalUrl: string = (res.request as { res?: { responseUrl?: string } })?.res?.responseUrl ?? url;
-  if (finalUrl.includes('account-verification')) {
-    throw new Error('muro account-verification — cookie do painel expirado?');
+  let lastErr: Error = new Error('scrape falhou');
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const res = await axios.get<string>(url, {
+        headers: { 'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9', Cookie: config.mercadoLivre.affiliateCookie },
+        timeout: 25000,
+        responseType: 'text',
+        validateStatus: () => true,
+        maxRedirects: 5,
+      });
+      const finalUrl: string = (res.request as { res?: { responseUrl?: string } })?.res?.responseUrl ?? url;
+      if (finalUrl.includes('account-verification')) {
+        throw new AuthWallError('muro account-verification — cookie do painel expirado?');
+      }
+      if (res.status !== 200) throw new Error(`scrape ${res.status}`);
+      return parseOfertasHtml(res.data);
+    } catch (err) {
+      if (err instanceof AuthWallError) throw err; // permanente
+      lastErr = err as Error;
+      if (attempt < retries) await sleep(retryDelayMs);
+    }
   }
-  if (res.status !== 200) throw new Error(`scrape ${res.status}`);
-  return parseOfertasHtml(res.data);
+  throw lastErr;
 }
 
 // ---------------------------------------------------------------------------
@@ -280,15 +327,27 @@ export interface DiscoverOptions {
   onCandidate?: (info: { seller: string; couponId: number; perfumeCount: number; total: number; kept: boolean }) => void;
 }
 
+export interface DiscoverResult {
+  coupons: PerfumeCoupon[];
+  candidates: number;
+  scraped: number;
+  errors: number;
+  /** True se bateu no muro de auth (cookie expirado) — resultado NÃO é confiável. */
+  authFailed: boolean;
+}
+
 /**
  * Dado o conjunto de cupons varridos, filtra sellers de perfumaria, resolve +
  * raspa SÓ os candidatos e devolve os que são de fato cupons de perfume.
  * Dedupe de raspagem por URL de loja (cupons da mesma loja → 1 raspagem).
+ *
+ * Se o cookie expirar no meio (muro account-verification), ABORTA e devolve
+ * `authFailed: true` — pra o chamador NÃO sobrescrever um cache bom com vazio.
  */
 export async function discoverFromCoupons(
   coupons: Coupon[],
   opts: DiscoverOptions = {}
-): Promise<PerfumeCoupon[]> {
+): Promise<DiscoverResult> {
   const {
     minPerfumeFraction = 0.3,
     minPerfumeProducts = 8,
@@ -304,13 +363,18 @@ export async function discoverFromCoupons(
     '[ML/coupons] Sellers de perfumaria filtrados da lista.'
   );
 
-  const scrapeCache = new Map<string, Deal[] | { error: string }>();
+  // Cache só de SUCESSO (Deal[]): erro transitório não fica cacheado — assim
+  // outro cupom da mesma loja tenta de novo em vez de herdar a falha.
+  const scrapeCache = new Map<string, Deal[]>();
   const out: PerfumeCoupon[] = [];
+  let scraped = 0;
+  let errors = 0;
 
   for (const c of candidates) {
     await sleep(resolveDelayMs);
     const searchUrl = await resolveCouponSearchUrl(c.id);
     if (!searchUrl) {
+      errors += 1;
       onCandidate?.({ seller: c.seller, couponId: c.id, perfumeCount: 0, total: 0, kept: false });
       continue;
     }
@@ -321,14 +385,17 @@ export async function discoverFromCoupons(
       await sleep(scrapeDelayMs);
       try {
         products = await scrapeCouponProducts(searchUrl);
+        scraped += 1;
+        scrapeCache.set(cacheKey, products);
       } catch (err) {
-        products = { error: (err as Error).message };
+        if (err instanceof AuthWallError) {
+          logger.error('[ML/coupons] Muro de auth (cookie expirado) — abortando descoberta pra não gravar cache vazio.');
+          return { coupons: out, candidates: candidates.length, scraped, errors, authFailed: true };
+        }
+        errors += 1;
+        onCandidate?.({ seller: c.seller, couponId: c.id, perfumeCount: 0, total: 0, kept: false });
+        continue;
       }
-      scrapeCache.set(cacheKey, products);
-    }
-    if ('error' in products) {
-      onCandidate?.({ seller: c.seller, couponId: c.id, perfumeCount: 0, total: 0, kept: false });
-      continue;
     }
 
     const perfumes = products.filter((d) => isPerfumeProduct(d.title));
@@ -357,5 +424,5 @@ export async function discoverFromCoupons(
 
   // Ordena: maior % primeiro, depois mais produtos de perfume.
   out.sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0) || b.perfumeCount - a.perfumeCount);
-  return out;
+  return { coupons: out, candidates: candidates.length, scraped, errors, authFailed: false };
 }

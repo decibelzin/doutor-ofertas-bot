@@ -36,16 +36,25 @@ interface CacheFile {
 }
 
 function loadCache(): CacheFile {
+  let raw: string;
   try {
-    return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) as CacheFile;
+    raw = fs.readFileSync(CACHE_FILE, 'utf8');
   } catch {
     logger.error({ file: CACHE_FILE }, '[post-perfume] Cache não encontrado — rode `npm run discover-coupons` antes.');
     process.exit(1);
   }
+  try {
+    return JSON.parse(raw) as CacheFile;
+  } catch {
+    // Arquivo existe mas não parseia: escrita concorrente do discover ou corrupção.
+    logger.error({ file: CACHE_FILE }, '[post-perfume] Cache ilegível (parcial/corrompido) — rode discover-coupons de novo.');
+    process.exit(1);
+  }
 }
 
+/** O ML manda expiração como timestamp INGÊNUO em UTC — parseia como UTC. */
 function notExpired(c: PerfumeCoupon): boolean {
-  const exp = DateTime.fromISO(c.expiration);
+  const exp = DateTime.fromISO(c.expiration, { zone: 'utc' });
   return !exp.isValid || exp > DateTime.now();
 }
 
@@ -112,7 +121,7 @@ async function main(): Promise<void> {
     console.log('---------------------------------');
     console.log(text);
     console.log('---------------------------------');
-    console.log(`imagem: ${deal.imageUrl ?? '(sem)'}  |  banner: ${config.coupon.bannerPath || '(sem)'}`);
+    console.log(`imagem do produto: ${deal.imageUrl ?? '(sem)'}`);
     process.exit(0);
   }
 
