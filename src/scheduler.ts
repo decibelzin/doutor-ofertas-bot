@@ -10,6 +10,8 @@ import { isInBank } from './format/perfumes';
 import { whenReady } from './whatsapp/client';
 import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
+import { couponsEnabled } from './providers/mercadolivre/coupons';
+import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -131,7 +133,89 @@ function scheduleNiche(niche: Niche): void {
   }, delay);
 }
 
-/** Inicia um loop por nicho. */
+// ---------------------------------------------------------------------------
+// Automação de CUPOM (perfume + cupom automático) — mesmo loop live do bot.
+// ---------------------------------------------------------------------------
+
+let discovering = false;
+
+/** Roda UMA descoberta de cupom (atualiza o cache). Não sobrepõe execuções. */
+async function runDiscoveryOnce(): Promise<void> {
+  if (discovering) {
+    logger.debug('[Scheduler] Descoberta de cupom já em andamento — pulando.');
+    return;
+  }
+  discovering = true;
+  try {
+    logger.info('[Scheduler] Atualizando cache de cupons...');
+    const r = await refreshCouponCache({ maxPages: config.coupon.maxPages });
+    logger.info(r, '[Scheduler] Cache de cupons atualizado.');
+  } catch (err) {
+    logger.error({ err: (err as Error).message }, '[Scheduler] Erro na descoberta de cupom.');
+  } finally {
+    discovering = false;
+  }
+}
+
+/** Loop de descoberta (a cada COUPON_DISCOVERY_INTERVAL_HOURS). */
+function scheduleCouponDiscovery(): void {
+  const intervalMs = Math.max(1, config.coupon.discoveryIntervalHours) * 60 * 60 * 1000;
+  setTimeout(() => {
+    runDiscoveryOnce().finally(() => scheduleCouponDiscovery());
+  }, intervalMs);
+}
+
+/** Posta UM perfume+cupom, respeitando janela e tetos anti-ban (mesma cota das ofertas). */
+async function postCouponTick(): Promise<void> {
+  if (!isWithinWindow()) {
+    logger.debug('[Scheduler] Cupom fora da janela.');
+    return;
+  }
+  if (capReached()) return;
+  const sock = await whenReady();
+  const r = await runCouponPost(sock, {});
+  if (r) {
+    logger.info(
+      { cupom: r.coupon.couponId, produto: r.deal.title, grupos: r.posted },
+      '[Scheduler] Perfume+cupom postado.'
+    );
+  }
+}
+
+/** Loop de postagem de cupom (intervalo próprio + jitter). */
+function scheduleCouponPost(): void {
+  const base = Math.max(1, config.coupon.postIntervalMinutes) * 60 * 1000;
+  const jitter = (Math.random() * 2 - 1) * config.schedule.jitterMinutes * 60 * 1000;
+  const delay = Math.max(60 * 1000, Math.round(base + jitter));
+  setTimeout(() => {
+    postCouponTick()
+      .catch((err) => logger.error({ err: (err as Error).message }, '[Scheduler] Erro no post de cupom.'))
+      .finally(() => scheduleCouponPost());
+  }, delay);
+}
+
+/** Liga a automação de cupom se habilitada + credenciais do painel presentes. */
+function startCouponAutomation(): void {
+  if (!couponsEnabled()) return; // sem cookie/csrf → nada a fazer
+  if (!config.coupon.auto) {
+    logger.info('[Scheduler] Automação de cupom desligada (COUPON_AUTO=false).');
+    return;
+  }
+  logger.info(
+    { descobertaHoras: config.coupon.discoveryIntervalHours, postMin: config.coupon.postIntervalMinutes },
+    '[Scheduler] Automação de cupom LIGADA (descoberta + post no automático).'
+  );
+  // Captação rápida: se o cache está velho/ausente, descobre logo no arranque
+  // (após o WhatsApp assentar), senão espera o próximo ciclo.
+  const staleMs = config.coupon.discoveryIntervalHours * 60 * 60 * 1000;
+  if (couponCacheAgeMs() > staleMs) {
+    setTimeout(() => void runDiscoveryOnce(), 30 * 1000);
+  }
+  scheduleCouponDiscovery();
+  scheduleCouponPost();
+}
+
+/** Inicia um loop por nicho (+ automação de cupom, se ligada). */
 export function startScheduler(): void {
   const niches = loadNiches();
   if (niches.length === 0) {
@@ -147,4 +231,5 @@ export function startScheduler(): void {
     '[Scheduler] Iniciado.'
   );
   for (const niche of niches) scheduleNiche(niche);
+  startCouponAutomation();
 }

@@ -45,6 +45,15 @@ export interface Config {
     bannerPath: string;
     // Link de busca opcional no rodapé do cupom (ex.: meli.la/...).
     searchLink: string;
+    // Automação no scheduler: descobrir cupons + postar perfume+cupom sozinho.
+    // Ligado por padrão quando há cookie/csrf do painel (COUPON_AUTO=false desliga).
+    auto: boolean;
+    // De quanto em quanto tempo atualizar o cache de cupons (horas).
+    discoveryIntervalHours: number;
+    // Intervalo entre posts de cupom (min); ainda respeita os tetos anti-ban.
+    postIntervalMinutes: number;
+    // Teto de páginas por varredura de descoberta (~507 = pool inteiro).
+    maxPages: number;
   };
   filter: {
     // Só postar perfume que a gente casa no banco (Fragrantica) OU que está fichado.
@@ -120,6 +129,10 @@ export const config: Config = {
   coupon: {
     bannerPath: process.env.COUPON_BANNER_PATH ?? '',
     searchLink: process.env.COUPON_SEARCH_LINK ?? '',
+    auto: bool(process.env.COUPON_AUTO, true),
+    discoveryIntervalHours: num(process.env.COUPON_DISCOVERY_INTERVAL_HOURS, 8),
+    postIntervalMinutes: num(process.env.COUPON_POST_INTERVAL_MINUTES, 90),
+    maxPages: num(process.env.COUPON_MAX_PAGES, 600),
   },
   filter: {
     onlyKnownPerfumes: bool(process.env.ONLY_KNOWN_PERFUMES, true),

@@ -73,9 +73,16 @@ bugs — todos corrigidos** (preço enganoso sem teto, batom entrando como perfu
 dropando anúncio de vendedor com hífen, sobrescrita de cache vazio na queda de auth, fuso da expiração,
 etc.).
 
-**Falta só:** (1) rodar a **varredura completa** (507 págs) 1x pra popular o cache — em andamento;
-(2) o usuário **validar comissão** com 1 clique/compra real; (3) opcional: agendar `discover-coupons`
-(semanal) e decidir se `post-perfume-coupon` entra no scheduler ou fica manual.
+**✅ AUTOMAÇÃO NO SCHEDULER (feita):** `npm run start`/`dev` agora, além das ofertas, roda sozinho:
+descoberta de cupom (a cada `COUPON_DISCOVERY_INTERVAL_HOURS`, padrão 8h) + post de perfume+cupom
+(a cada `COUPON_POST_INTERVAL_MINUTES`, padrão 90min), respeitando janela e tetos anti-ban (mesma cota
+das ofertas). Liga sozinho quando há cookie/csrf do painel; `COUPON_AUTO=false` desliga. Lógica
+compartilhada em `src/core/coupon-runner.ts` (`refreshCouponCache` + `runCouponPost`); os CLIs
+`discover-coupons`/`post-perfume-coupon` viraram wrappers finos disso. **Validação de comissão do
+usuário: OK — cliques contam (D-1); ver [[ref-ml-affiliate-metrics-api]].**
+
+**Falta só:** manter cookie/csrf frescos (expiram → recapturar); opcional: trocar meli.la (link social,
+cai no perfil no desktop) pelo link direto do produto pra melhor conversão no WhatsApp Web.
 
 ## 🚨 Sessão 3b (2026-07-22) — VIRADA DE CHAVE: cupons são AUTOMÁTICOS, `create-code` é irrelevante
 **A pergunta "qual o body do `create-code`?" era a pergunta errada.** O `coupon-terms` do cupom

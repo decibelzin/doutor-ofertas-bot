@@ -1,116 +1,33 @@
 /**
- * DESCOBERTA DE CUPONS DE PERFUMARIA → cache em disco.
+ * DESCOBERTA DE CUPONS DE PERFUMARIA → cache em disco (wrapper de CLI).
  *
  *   npm run discover-coupons              # varre a lista toda (~507 págs) e descobre
  *   npm run discover-coupons -- 40        # varre só as primeiras 40 páginas (teste)
  *
- * Fluxo (ver docs/handoff-cupons.md):
- *   1. varre GET /coupons?page=N (barato; só `page` funciona) — RESUMÍVEL
- *   2. filtra sellers de perfumaria (nome bate watchlist)
- *   3. resolve coupon-search-url + raspa a listing SÓ dos candidatos
- *   4. classifica (produtos-perfume) e grava data/perfume-coupons.json
- *
- * Tudo autenticado na sessão do usuário → pacing conservador. O sweep é salvo
- * incrementalmente em data/coupon-sweep.json; se o cookie expirar no meio, roda
- * de novo que ele retoma de onde parou.
+ * Lógica em src/core/coupon-runner.ts (compartilhada com o scheduler live).
  */
-import fs from 'node:fs';
-import path from 'node:path';
 import { logger } from '../logger';
-import {
-  couponsEnabled,
-  sweepCouponList,
-  discoverFromCoupons,
-  type SweepState,
-  type PerfumeCoupon,
-} from '../providers/mercadolivre/coupons';
-
-const SWEEP_FILE = path.resolve('data/coupon-sweep.json');
-const CACHE_FILE = path.resolve('data/perfume-coupons.json');
-// Teto de páginas: ~507 (7088/14). 600 dá folga se o pool crescer.
-const MAX_PAGES_DEFAULT = 600;
-// Idade máxima do sweep salvo pra ser reaproveitado (senão recomeça do zero).
-const SWEEP_TTL_MS = 24 * 60 * 60 * 1000;
-
-interface CacheFile {
-  generatedAt: string;
-  totalSwept: number;
-  candidatesScraped: number;
-  coupons: PerfumeCoupon[];
-}
-
-function loadSweep(): SweepState | undefined {
-  try {
-    const raw = JSON.parse(fs.readFileSync(SWEEP_FILE, 'utf8')) as SweepState & { savedAt?: number };
-    if (raw.savedAt && Date.now() - raw.savedAt > SWEEP_TTL_MS) {
-      logger.info('[discover] Sweep salvo é velho (>24h) — recomeçando a varredura.');
-      return undefined;
-    }
-    logger.info({ paginas: raw.lastPage, cupons: raw.coupons?.length }, '[discover] Retomando sweep salvo.');
-    return { totalItems: raw.totalItems ?? null, lastPage: raw.lastPage ?? 0, coupons: raw.coupons ?? [] };
-  } catch {
-    return undefined;
-  }
-}
-
-/** Escrita atômica (temp + rename) — leitor concorrente nunca vê JSON truncado. */
-function writeAtomic(file: string, data: string): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, data);
-  fs.renameSync(tmp, file);
-}
-
-function saveSweep(s: SweepState): void {
-  writeAtomic(SWEEP_FILE, JSON.stringify({ ...s, savedAt: Date.now() }, null, 2));
-}
-
-/** Nº de cupons já no cache atual (pra decidir se vale sobrescrever). */
-function existingCacheCount(): number {
-  try {
-    const raw = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) as CacheFile;
-    return raw.coupons?.length ?? 0;
-  } catch {
-    return 0;
-  }
-}
-
-const COUPONS_PER_PAGE = 14;
+import { couponsEnabled } from '../providers/mercadolivre/coupons';
+import { refreshCouponCache, loadCouponCache, DEFAULT_MAX_PAGES } from '../core/coupon-runner';
 
 async function main(): Promise<void> {
   if (!couponsEnabled()) {
     logger.error('[discover] ML_AFFILIATE_COOKIE / ML_AFFILIATE_CSRF ausentes no .env.');
     process.exit(1);
   }
-  const maxPages = Number(process.argv[2] ?? MAX_PAGES_DEFAULT) || MAX_PAGES_DEFAULT;
+  const maxPages = Number(process.argv[2] ?? DEFAULT_MAX_PAGES) || DEFAULT_MAX_PAGES;
 
-  // 1) Varredura da lista (resumível).
   logger.info({ maxPages }, '[discover] Varrendo a lista de cupons...');
   let lastLog = 0;
-  const sweep = await sweepCouponList(maxPages, {
-    state: loadSweep(),
+  let logged = 0;
+  const result = await refreshCouponCache({
+    maxPages,
     onPage: (s) => {
-      saveSweep(s);
       if (s.lastPage - lastLog >= 10) {
         lastLog = s.lastPage;
         logger.info({ pagina: s.lastPage, cupons: s.coupons.length, total: s.totalItems }, '[discover] ...varrendo');
       }
     },
-  });
-  logger.info(
-    { paginas: sweep.lastPage, cupons: sweep.coupons.length, total: sweep.totalItems },
-    '[discover] Varredura concluída.'
-  );
-
-  // Escopo da descoberta = só os cupons das primeiras `maxPages` páginas. Sem
-  // isso, um `-- 40` sobre um sweep completo salvo processaria TODOS os ~7000
-  // (o oposto do teste leve). slice largo = tudo, no run completo.
-  const scope = sweep.coupons.slice(0, maxPages * COUPONS_PER_PAGE);
-
-  // 2–4) Filtra perfumaria, resolve+raspa candidatos, classifica.
-  logger.info({ escopo: scope.length }, '[discover] Resolvendo + raspando candidatos de perfumaria...');
-  let logged = 0;
-  const result = await discoverFromCoupons(scope, {
     onCandidate: (info) => {
       logged += 1;
       logger.info(
@@ -120,37 +37,24 @@ async function main(): Promise<void> {
     },
   });
 
-  // GUARDA: não sobrescreve um cache bom com vazio quando a auth caiu no meio
-  // (ou quando 0 achados coexistem com erros). Cache velho é melhor que zerado.
-  const prior = existingCacheCount();
-  if (result.coupons.length === 0 && (result.authFailed || result.errors > 0) && prior > 0) {
-    logger.error(
-      { authFailed: result.authFailed, errors: result.errors, cacheAntigo: prior },
-      '[discover] Descoberta degradou (auth/erros) e não achou nada — PRESERVANDO o cache anterior.'
-    );
+  if (!result.written) {
+    logger.error({ ...result }, '[discover] Cache NÃO gravado (degradado/auth) — cache anterior preservado.');
     process.exit(1);
   }
-
-  const cache: CacheFile = {
-    generatedAt: new Date().toISOString(),
-    totalSwept: scope.length,
-    candidatesScraped: result.candidates,
-    coupons: result.coupons,
-  };
-  writeAtomic(CACHE_FILE, JSON.stringify(cache, null, 2));
-
   logger.info(
-    { cuponsPerfume: result.coupons.length, candidatos: result.candidates, erros: result.errors, arquivo: CACHE_FILE },
+    { cuponsPerfume: result.count, candidatos: result.candidates, erros: result.errors },
     '[discover] Cache de cupons de perfumaria gravado.'
   );
+
+  const cache = loadCouponCache();
   console.log('\n===== CUPONS DE PERFUMARIA DESCOBERTOS =====');
-  for (const c of result.coupons) {
+  for (const c of cache?.coupons ?? []) {
     console.log(
       `${c.title.padEnd(10)} ${c.seller.padEnd(24)} perfumes=${c.perfumeCount}/${c.totalProducts} exp=${c.expiration.slice(0, 10)} (cupom ${c.couponId})`
     );
     for (const p of c.products.slice(0, 3)) console.log(`    - ${p.title.slice(0, 60)}`);
   }
-  if (result.coupons.length === 0) console.log('(nenhum — tente aumentar o range de páginas ou revisar a watchlist)');
+  if ((cache?.coupons?.length ?? 0) === 0) console.log('(nenhum — tente aumentar o range de páginas ou revisar a watchlist)');
   process.exit(0);
 }
 
