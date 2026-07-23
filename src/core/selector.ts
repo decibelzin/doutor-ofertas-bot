@@ -1,5 +1,6 @@
 import { config } from '../config';
 import { logger } from '../logger';
+import { alertAuthDegraded } from './health';
 import type { Deal } from './deal';
 
 import * as mercadolivre from '../providers/mercadolivre';
@@ -83,8 +84,14 @@ export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
       // Fonte preferida: hub de afiliado por busca (catálogo inteiro, com avaliação).
       // Sem hub/searchTerms, cai na página pública de ofertas por categoria.
       let mlDeals: Deal[] = [];
-      if (hubEnabled() && niche.ml?.searchTerms?.length) {
-        mlDeals = await fetchHubDeals(niche.ml.searchTerms, { pagesPerTerm: config.mercadoLivre.hubPagesPerTerm });
+      const triedHub = hubEnabled() && Boolean(niche.ml?.searchTerms?.length);
+      if (triedHub) {
+        mlDeals = await fetchHubDeals(niche.ml!.searchTerms!, { pagesPerTerm: config.mercadoLivre.hubPagesPerTerm });
+      }
+      // Hub ligado + vários termos retornando ZERO = sinal forte de cookie/csrf
+      // expirado (não coincidência). Alerta pra recaptura rápida.
+      if (triedHub && mlDeals.length === 0) {
+        alertAuthDegraded('hub-vazio', { niche: niche.name, termos: niche.ml?.searchTerms?.length });
       }
       // Sem hub, sem searchTerms, OU hub vazio (cookie/csrf expirado?) -> página de ofertas.
       if (mlDeals.length === 0) {

@@ -7,8 +7,9 @@ import { loadNiches, type Niche } from './core/niches';
 import { formatDeal } from './format/whatsapp';
 import { resolvePreset } from './format/title';
 import { isInBank } from './format/perfumes';
-import { whenReady } from './whatsapp/client';
+import { whenReady, getSocket } from './whatsapp/client';
 import { sendToGroup, fetchDealImage } from './whatsapp/sender';
+import { setAlertSink, alertAuthDegraded } from './core/health';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
@@ -51,20 +52,29 @@ function isKnownPerfume(deal: Deal): boolean {
   return resolvePreset(deal.title, deal.id) !== null || isInBank(deal.title);
 }
 
-/** Melhor oferta do nicho ainda não postada dentro do cooldown (ou null). */
+/**
+ * Uma oferta está elegível se: passa o filtro de qualidade E (não está no
+ * cooldown OU voltou MUITO melhor — re-preço). O bypass de re-preço captura o
+ * cenário mais quente: um perfume postado a 30% que HOJE caiu pra 55%.
+ */
+function isEligible(deal: Deal, cooldownMs: number): boolean {
+  if (config.filter.onlyKnownPerfumes && !isKnownPerfume(deal)) return false;
+  return store.canPostNow(deal.id, deal.discountPercent, cooldownMs);
+}
+
+/**
+ * Escolhe a oferta do nicho pro slot. NOVIDADE-FIRST: entre as elegíveis (já
+ * ordenadas por desconto), prioriza as que NUNCA foram postadas — só re-serve
+ * "evergreens" quando não há novidade. Maximiza cobertura/variedade e garante
+ * que todo perfume qualificado vá ao ar ao menos 1x antes de repetir.
+ */
 async function pickNicheDeal(niche: Niche): Promise<Deal | null> {
   const cooldownMs = config.dedup.cooldownDays * DAY_MS;
   const deals = await collectNicheDeals(niche);
-  for (const deal of deals) {
-    if (store.wasPostedRecently(deal.id, cooldownMs)) continue;
-    // Filtro de qualidade: só posta perfume conhecido (ou fichado).
-    if (config.filter.onlyKnownPerfumes && !isKnownPerfume(deal)) {
-      logger.debug({ title: deal.title }, '[Scheduler] Pulado — perfume desconhecido no banco.');
-      continue;
-    }
-    return deal;
-  }
-  return null;
+  const eligible = deals.filter((d) => isEligible(d, cooldownMs));
+  if (eligible.length === 0) return null;
+  const fresh = eligible.filter((d) => !store.hasEverPosted(d.id));
+  return (fresh.length ? fresh : eligible)[0]!; // já vem ordenado por desconto
 }
 
 /** Posta UMA oferta do nicho nos grupos dele. */
@@ -161,6 +171,7 @@ async function runDiscoveryOnce(): Promise<void> {
     logger.info('[Scheduler] Atualizando cache de cupons...');
     const r = await refreshCouponCache({ maxPages: config.coupon.maxPages });
     logger.info(r, '[Scheduler] Cache de cupons atualizado.');
+    if (r.authFailed) alertAuthDegraded('cupom-muro-auth');
   } catch (err) {
     logger.error({ err: (err as Error).message }, '[Scheduler] Erro na descoberta de cupom.');
   } finally {
@@ -247,6 +258,15 @@ export function startScheduler(): void {
     },
     '[Scheduler] Iniciado.'
   );
+
+  // Alerta de saúde (cookie expirado) também no WhatsApp, se configurado.
+  if (config.admin.alertGroup) {
+    setAlertSink(async (msg) => {
+      const s = getSocket();
+      if (s) await s.sendMessage(config.admin.alertGroup, { text: msg });
+    });
+  }
+
   for (const niche of niches) scheduleNiche(niche, { immediate: true });
   startCouponAutomation();
 }

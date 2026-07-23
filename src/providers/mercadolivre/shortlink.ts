@@ -3,6 +3,7 @@ import path from 'node:path';
 import axios from 'axios';
 import { config } from '../../config';
 import { logger } from '../../logger';
+import { alertAuthDegraded } from '../../core/health';
 import type { Deal } from '../../core/deal';
 
 /**
@@ -94,6 +95,7 @@ export async function generateShortLink(itemId: string, productUrl: string): Pro
       { err: (err as Error).message, status },
       '[ML/shortlink] Falha ao gerar link curto (cookie/csrf expirado?) — usando link matt.'
     );
+    if (status === 401 || status === 403) alertAuthDegraded('shortlink-nao-autorizado', { status });
     return null;
   }
 }

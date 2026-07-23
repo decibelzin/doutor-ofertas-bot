@@ -202,10 +202,13 @@ export function pickCoupon(
     .sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
 
   for (const coupon of coupons) {
-    const products = [...coupon.products]
-      .filter((d) => !store.wasPostedRecently(d.id, cooldownMs))
+    const eligible = coupon.products
+      .filter((d) => store.canPostNow(d.id, d.discountPercent ?? 0, cooldownMs))
       .sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
-    if (products.length > 0) return { coupon, deal: products[0]! };
+    if (eligible.length === 0) continue;
+    // Novidade-first também no cupom: perfume nunca postado ganha do evergreen.
+    const fresh = eligible.filter((d) => !store.hasEverPosted(d.id));
+    return { coupon, deal: (fresh.length ? fresh : eligible)[0]! };
   }
   return null;
 }

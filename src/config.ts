@@ -39,6 +39,9 @@ export interface Config {
   };
   dedup: {
     cooldownDays: number;
+    // Re-postar dentro do cooldown SE o desconto atual melhorar N pontos vs o
+    // melhor já postado (captura re-preço quente). 0 = desliga o bypass.
+    repriceBypassPoints: number;
   };
   coupon: {
     // Caminho da imagem-banner do cupom (fixa, reusada). Vazio = manda só texto.
@@ -62,6 +65,10 @@ export interface Config {
   };
   store: {
     file: string;
+  };
+  admin: {
+    // Grupo/chat JID que recebe alertas de saúde (ex.: cookie expirado). Vazio = só loga.
+    alertGroup: string;
   };
   shopee: {
     enabled: boolean;
@@ -125,6 +132,7 @@ export const config: Config = {
   },
   dedup: {
     cooldownDays: num(process.env.DEDUP_COOLDOWN_DAYS, 3),
+    repriceBypassPoints: num(process.env.DEDUP_REPRICE_BYPASS_POINTS, 10),
   },
   coupon: {
     bannerPath: process.env.COUPON_BANNER_PATH ?? '',
@@ -139,6 +147,9 @@ export const config: Config = {
   },
   store: {
     file: process.env.STORE_FILE ?? './data/posted.json',
+  },
+  admin: {
+    alertGroup: process.env.ADMIN_ALERT_GROUP ?? '',
   },
   shopee: {
     // Habilitado quando há credenciais Open API.
@@ -165,7 +176,7 @@ export const config: Config = {
     searchTerms: mlTerms.length ? mlTerms : ['casa', 'eletronicos', 'eletrodomesticos', 'beleza'],
     minDiscountPercent: num(process.env.ML_MIN_DISCOUNT_PERCENT, 15),
     minRating: num(process.env.ML_MIN_RATING, 4.0),
-    hubPagesPerTerm: num(process.env.ML_HUB_PAGES_PER_TERM, 1),
+    hubPagesPerTerm: num(process.env.ML_HUB_PAGES_PER_TERM, 2),
     linkMode: (process.env.ML_LINK_MODE ?? 'matt').toLowerCase() === 'simple' ? 'simple' : 'matt',
     mattWord: process.env.ML_MATT_WORD ?? '',
     mattTool: process.env.ML_MATT_TOOL ?? '',
