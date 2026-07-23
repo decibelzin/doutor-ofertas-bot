@@ -55,9 +55,20 @@ class Store {
     return this.records.some((r) => r.dealId === dealId && r.ts >= cutoff);
   }
 
-  /** Quantas postagens desde `sinceMs` (para os tetos por hora/dia). */
+  /** Quantas mensagens (registros por grupo) desde `sinceMs`. */
   countSince(sinceMs: number): number {
     return this.records.filter((r) => r.ts >= sinceMs).length;
+  }
+
+  /**
+   * Quantas OFERTAS distintas foram postadas desde `sinceMs` (1 oferta enviada a
+   * N grupos conta 1, não N). É essa a métrica dos tetos anti-ban — senão um
+   * único post pra 10 grupos já estouraria um teto de 8 e travaria a cadência.
+   */
+  countDealsSince(sinceMs: number): number {
+    const ids = new Set<string>();
+    for (const r of this.records) if (r.ts >= sinceMs) ids.add(r.dealId);
+    return ids.size;
   }
 
   /** Registra o envio de uma oferta para um grupo. */

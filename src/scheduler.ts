@@ -31,13 +31,14 @@ export function isWithinWindow(): boolean {
 /** Algum teto anti-ban (por hora / por dia) foi atingido? (global, entre todos os nichos) */
 function capReached(): boolean {
   const { maxPostsPerHour, maxPostsPerDay } = config.schedule;
-  if (maxPostsPerHour && store.countSince(Date.now() - HOUR_MS) >= maxPostsPerHour) {
+  // Conta OFERTAS distintas (não mensagens-por-grupo): 1 oferta pra 10 grupos = 1.
+  if (maxPostsPerHour && store.countDealsSince(Date.now() - HOUR_MS) >= maxPostsPerHour) {
     logger.info({ maxPostsPerHour }, '[Scheduler] Teto por hora atingido, aguardando.');
     return true;
   }
   if (maxPostsPerDay) {
     const startOfDay = nowTz().startOf('day').toMillis();
-    if (store.countSince(startOfDay) >= maxPostsPerDay) {
+    if (store.countDealsSince(startOfDay) >= maxPostsPerDay) {
       logger.info({ maxPostsPerDay }, '[Scheduler] Teto diário atingido.');
       return true;
     }
@@ -118,18 +119,28 @@ export async function postNowAll(opts: { ignoreWindow?: boolean } = {}): Promise
   }
 }
 
+// Primeiro post logo após o arranque (não espera um intervalo inteiro) — captação
+// rápida + feedback imediato. Curto + pequeno stagger aleatório entre nichos.
+const KICKOFF_MIN_MS = 15 * 1000;
+const KICKOFF_SPREAD_MS = 25 * 1000;
+
 /** Loop independente de um nicho (intervalo próprio + jitter). */
-function scheduleNiche(niche: Niche): void {
-  const baseMin = niche.intervalMinutes ?? config.schedule.intervalMinutes;
-  const base = baseMin * 60 * 1000;
-  const jitter = (Math.random() * 2 - 1) * config.schedule.jitterMinutes * 60 * 1000;
-  const delay = Math.max(60 * 1000, Math.round(base + jitter));
+function scheduleNiche(niche: Niche, opts: { immediate?: boolean } = {}): void {
+  let delay: number;
+  if (opts.immediate) {
+    delay = KICKOFF_MIN_MS + Math.floor(Math.random() * KICKOFF_SPREAD_MS);
+  } else {
+    const baseMin = niche.intervalMinutes ?? config.schedule.intervalMinutes;
+    const base = baseMin * 60 * 1000;
+    const jitter = (Math.random() * 2 - 1) * config.schedule.jitterMinutes * 60 * 1000;
+    delay = Math.max(60 * 1000, Math.round(base + jitter));
+  }
   logger.info({ niche: niche.name, proximoEmMin: Math.round(delay / 60000) }, '[Scheduler] Próxima postagem agendada.');
 
   setTimeout(() => {
     postNiche(niche)
       .catch((err) => logger.error({ err: (err as Error).message, niche: niche.name }, '[Scheduler] Erro no ciclo.'))
-      .finally(() => scheduleNiche(niche));
+      .finally(() => scheduleNiche(niche)); // próximos ciclos = intervalo normal
   }, delay);
 }
 
@@ -183,10 +194,16 @@ async function postCouponTick(): Promise<void> {
 }
 
 /** Loop de postagem de cupom (intervalo próprio + jitter). */
-function scheduleCouponPost(): void {
-  const base = Math.max(1, config.coupon.postIntervalMinutes) * 60 * 1000;
-  const jitter = (Math.random() * 2 - 1) * config.schedule.jitterMinutes * 60 * 1000;
-  const delay = Math.max(60 * 1000, Math.round(base + jitter));
+function scheduleCouponPost(opts: { immediate?: boolean } = {}): void {
+  let delay: number;
+  if (opts.immediate) {
+    // Kickoff um pouco depois das ofertas, pra não postar tudo junto no start.
+    delay = 2 * 60 * 1000 + Math.floor(Math.random() * KICKOFF_SPREAD_MS);
+  } else {
+    const base = Math.max(1, config.coupon.postIntervalMinutes) * 60 * 1000;
+    const jitter = (Math.random() * 2 - 1) * config.schedule.jitterMinutes * 60 * 1000;
+    delay = Math.max(60 * 1000, Math.round(base + jitter));
+  }
   setTimeout(() => {
     postCouponTick()
       .catch((err) => logger.error({ err: (err as Error).message }, '[Scheduler] Erro no post de cupom.'))
@@ -212,7 +229,7 @@ function startCouponAutomation(): void {
     setTimeout(() => void runDiscoveryOnce(), 30 * 1000);
   }
   scheduleCouponDiscovery();
-  scheduleCouponPost();
+  scheduleCouponPost({ immediate: true });
 }
 
 /** Inicia um loop por nicho (+ automação de cupom, se ligada). */
@@ -230,6 +247,6 @@ export function startScheduler(): void {
     },
     '[Scheduler] Iniciado.'
   );
-  for (const niche of niches) scheduleNiche(niche);
+  for (const niche of niches) scheduleNiche(niche, { immediate: true });
   startCouponAutomation();
 }
