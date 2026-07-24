@@ -100,6 +100,10 @@ export interface Config {
     minRating: number;
     // Quantas páginas (12 itens cada) buscar por termo no hub de afiliado.
     hubPagesPerTerm: number;
+    // Busca pública (lista.mercadolivre.com.br): páginas por termo (48/pág). 0 = desliga.
+    searchPagesPerTerm: number;
+    // TTL do cache da busca pública (min) — raspa 1x por esse período, não a cada post.
+    searchTtlMinutes: number;
     // Link de afiliado: 'matt' anexa matt_word/matt_tool; 'simple' usa uma tag única.
     linkMode: 'matt' | 'simple';
     mattWord: string;
@@ -189,6 +193,8 @@ export const config: Config = {
     minDiscountPercent: num(process.env.ML_MIN_DISCOUNT_PERCENT, 15),
     minRating: num(process.env.ML_MIN_RATING, 4.0),
     hubPagesPerTerm: num(process.env.ML_HUB_PAGES_PER_TERM, 2),
+    searchPagesPerTerm: num(process.env.ML_SEARCH_PAGES_PER_TERM, 2),
+    searchTtlMinutes: num(process.env.ML_SEARCH_TTL_MINUTES, 25),
     linkMode: (process.env.ML_LINK_MODE ?? 'matt').toLowerCase() === 'simple' ? 'simple' : 'matt',
     mattWord: process.env.ML_MATT_WORD ?? '',
     mattTool: process.env.ML_MATT_TOOL ?? '',

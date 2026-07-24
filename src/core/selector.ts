@@ -7,6 +7,7 @@ import * as mercadolivre from '../providers/mercadolivre';
 import * as shopee from '../providers/shopee';
 import { fetchOfertasForCategories } from '../providers/mercadolivre/ofertas';
 import { fetchHubDeals, hubEnabled } from '../providers/mercadolivre/hub';
+import { fetchSearchDeals, searchEnabled } from '../providers/mercadolivre/search';
 import { fetchDealsForKeywords as shopeeByKeywords } from '../providers/shopee';
 import type { Niche } from './niches';
 
@@ -83,19 +84,31 @@ export async function collectNicheDeals(niche: Niche): Promise<Deal[]> {
     try {
       // Fonte preferida: hub de afiliado por busca (catálogo inteiro, com avaliação).
       // Sem hub/searchTerms, cai na página pública de ofertas por categoria.
-      let mlDeals: Deal[] = [];
-      const triedHub = hubEnabled() && Boolean(niche.ml?.searchTerms?.length);
+      const mlDeals: Deal[] = [];
+      const terms = niche.ml?.searchTerms ?? [];
+      const triedHub = hubEnabled() && terms.length > 0;
       if (triedHub) {
-        mlDeals = await fetchHubDeals(niche.ml!.searchTerms!, { pagesPerTerm: config.mercadoLivre.hubPagesPerTerm });
+        // Hub PRIMEIRO (traz avaliação/comissão → vence na dedup do produto).
+        const hub = await fetchHubDeals(terms, { pagesPerTerm: config.mercadoLivre.hubPagesPerTerm });
+        mlDeals.push(...hub);
+        // Hub ligado + vários termos retornando ZERO = cookie/csrf provavelmente
+        // expirado (não coincidência). Alerta pra recaptura rápida.
+        if (hub.length === 0) {
+          alertAuthDegraded('hub-vazio', { niche: niche.name, termos: terms.length });
+        }
       }
-      // Hub ligado + vários termos retornando ZERO = sinal forte de cookie/csrf
-      // expirado (não coincidência). Alerta pra recaptura rápida.
-      if (triedHub && mlDeals.length === 0) {
-        alertAuthDegraded('hub-vazio', { niche: niche.name, termos: niche.ml?.searchTerms?.length });
+      // Busca PÚBLICA (volume): o catálogo inteiro, cacheado por TTL. Soma os
+      // milhares que o hub não pega. Roda junto, não no lugar.
+      if (searchEnabled() && terms.length > 0) {
+        try {
+          mlDeals.push(...(await fetchSearchDeals(terms)));
+        } catch (err) {
+          logger.error({ err: (err as Error).message, niche: niche.name }, '[Selector] Erro busca pública');
+        }
       }
-      // Sem hub, sem searchTerms, OU hub vazio (cookie/csrf expirado?) -> página de ofertas.
+      // Nada das fontes acima -> fallback pra página pública de ofertas.
       if (mlDeals.length === 0) {
-        mlDeals = await fetchOfertasForCategories(niche.ml?.categories ?? []);
+        mlDeals.push(...(await fetchOfertasForCategories(niche.ml?.categories ?? [])));
       }
       all.push(...mlDeals);
     } catch (err) {
