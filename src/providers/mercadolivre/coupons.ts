@@ -119,6 +119,9 @@ const PERFUME_BRANDS = [
   'eudora', 'boticario', 'natura', 'avon', 'mahogany', 'jequiti',
   'lattafa', 'armaf', 'al haramain', 'alharamain', 'afnan', 'ajmal', 'rasasi',
   'khadlaj', 'mawwal', 'lduk', 'maison alhambra', 'alhambra', 'zimaya', 'nusuk',
+  // Casas árabes/nicho que os concorrentes postam (vistas no feed do ZP Links):
+  'al wataniah', 'wataniah', 'french avenue', 'paris corner', 'riiffs', 'maktub',
+  'bidaya', 'bharara', 'orientica', 'swiss arabian',
   'calvin klein', 'paco rabanne', 'rabanne', 'carolina herrera', 'dior', 'versace',
   'giorgio armani', 'armani', 'hugo boss', 'dolce', 'gabbana', 'montblanc',
   'azzaro', 'jean paul gaultier', 'gaultier', 'ferrari', 'antonio banderas',
