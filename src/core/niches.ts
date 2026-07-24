@@ -38,7 +38,10 @@ export function loadNiches(): Niche[] {
       (n) => n && n.name && Array.isArray(n.groups) && n.groups.length > 0
     );
     if (niches.length > 0) {
-      logger.info({ nichos: niches.map((n) => n.name) }, '[Niches] Carregados de config/niches.json.');
+      logger.info(
+        { fonte: 'config/niches.json', nichos: niches.map((n) => ({ nome: n.name, grupos: n.groups.length })) },
+        '[Niches] Grupos carregados (fonte única = config/niches.json).'
+      );
       return niches;
     }
   } catch {
@@ -46,7 +49,10 @@ export function loadNiches(): Niche[] {
   }
 
   if (config.whatsapp.groupIds.length > 0) {
-    logger.info('[Niches] Sem config/niches.json — usando nicho "geral" (WHATSAPP_GROUP_IDS + /ofertas geral).');
+    logger.info(
+      { fonte: 'WHATSAPP_GROUP_IDS (.env, fallback)', grupos: config.whatsapp.groupIds.length },
+      '[Niches] Sem config/niches.json — usando nicho "geral" com os grupos do .env.'
+    );
     return [{ name: 'geral', groups: config.whatsapp.groupIds, ml: { categories: [] } }];
   }
 
