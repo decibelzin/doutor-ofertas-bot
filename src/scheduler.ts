@@ -6,12 +6,11 @@ import { collectNicheDeals } from './core/selector';
 import { loadNiches, type Niche } from './core/niches';
 import { formatDeal } from './format/whatsapp';
 import { resolvePreset } from './format/title';
-import { isInBank } from './format/perfumes';
 import { whenReady, getSocket } from './whatsapp/client';
 import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { setAlertSink, alertAuthDegraded } from './core/health';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
-import { couponsEnabled } from './providers/mercadolivre/coupons';
+import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
@@ -47,9 +46,14 @@ function capReached(): boolean {
   return false;
 }
 
-/** O perfume é "conhecido" (fichado ou casado no banco Fragrantica)? */
+/**
+ * É um perfume POSTÁVEL? Aceita perfume de verdade (keyword/marca — INCLUI
+ * árabes e nicho fora do banco Fragrantica, ex.: Lattafa/Armaf/Al Wataniah/
+ * French Avenue) e corta maquiagem/cabelo. Antes o gate era só `isInBank`, que
+ * cortava justamente o segmento quente que os concorrentes postam.
+ */
 function isKnownPerfume(deal: Deal): boolean {
-  return resolvePreset(deal.title, deal.id) !== null || isInBank(deal.title);
+  return isPerfumeProduct(deal.title) || resolvePreset(deal.title, deal.id) !== null;
 }
 
 /**
