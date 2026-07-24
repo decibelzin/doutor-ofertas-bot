@@ -23,17 +23,41 @@ export interface PostRecord {
   title: string;
   price: number;
   discount: number;
+  /** Id da mensagem enviada (Baileys) — liga o post à reação de moderação. */
+  msgId?: string;
+}
+
+/** Produto vetado à mão (reação ❌): NUNCA mais postar. Permanente. */
+interface BlockedProduct {
+  title: string;
+  ts: number;
 }
 
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // poda registros com mais de 30 dias
 
 class Store {
   private readonly file: string;
+  private readonly blockFile: string;
   private records: PostRecord[];
+  private blocked: Record<string, BlockedProduct>;
 
   constructor(file: string) {
     this.file = path.resolve(file);
+    this.blockFile = path.resolve(path.dirname(this.file), 'blocked-products.json');
     this.records = this.load();
+    this.blocked = this.loadBlocked();
+  }
+
+  private loadBlocked(): Record<string, BlockedProduct> {
+    try {
+      return JSON.parse(fs.readFileSync(this.blockFile, 'utf8')) as Record<string, BlockedProduct>;
+    } catch {
+      return {};
+    }
+  }
+
+  private saveBlocked(): void {
+    writeFileAtomic(this.blockFile, JSON.stringify(this.blocked, null, 2));
   }
 
   private load(): PostRecord[] {
@@ -99,6 +123,7 @@ class Store {
    * postado (re-preço quente). Usado por oferta e cupom pra decidir o dedup.
    */
   canPostNow(dealId: string, discountPercent: number, withinMs: number): boolean {
+    if (this.isBlocked(dealId)) return false; // vetado à mão (❌) — nunca posta
     if (!this.wasPostedRecently(dealId, withinMs)) return true;
     const bypass = config.dedup.repriceBypassPoints;
     if (bypass <= 0) return false;
@@ -122,8 +147,8 @@ class Store {
     return ids.size;
   }
 
-  /** Registra o envio de uma oferta para um grupo. */
-  markPosted(deal: Deal, groupId: string, ts: number = Date.now()): void {
+  /** Registra o envio de uma oferta para um grupo (com o id da mensagem, se houver). */
+  markPosted(deal: Deal, groupId: string, msgId?: string, ts: number = Date.now()): void {
     this.records.push({
       dealId: deal.id,
       groupId,
@@ -132,8 +157,32 @@ class Store {
       title: deal.title,
       price: deal.priceNow,
       discount: deal.discountPercent,
+      ...(msgId ? { msgId } : {}),
     });
     this.save();
+  }
+
+  /** Acha a oferta (id + título) de uma mensagem enviada, pela reação de moderação. */
+  dealByMessage(msgId: string): { dealId: string; title: string } | null {
+    const r = this.records.find((x) => x.msgId === msgId);
+    return r ? { dealId: r.dealId, title: r.title } : null;
+  }
+
+  /** Veta um produto pra sempre (reação ❌). Idempotente. */
+  blockProduct(dealId: string, title: string): void {
+    if (this.blocked[dealId]) return;
+    this.blocked[dealId] = { title, ts: Date.now() };
+    this.saveBlocked();
+  }
+
+  /** O produto está vetado (não postar nunca)? */
+  isBlocked(dealId: string): boolean {
+    return Boolean(this.blocked[dealId]);
+  }
+
+  /** Quantos produtos vetados (pra log/relatório). */
+  blockedCount(): number {
+    return Object.keys(this.blocked).length;
   }
 }
 

@@ -85,12 +85,11 @@ export async function sendToGroup(
   groupId: string,
   text: string,
   image?: Buffer | null
-): Promise<void> {
-  if (image) {
-    await sock.sendMessage(groupId, { image, caption: text });
-  } else {
-    await sock.sendMessage(groupId, { text });
-  }
+): Promise<string | undefined> {
+  const sent = image
+    ? await sock.sendMessage(groupId, { image, caption: text })
+    : await sock.sendMessage(groupId, { text });
+  return sent?.key?.id ?? undefined; // id da msg → liga à reação de moderação
 }
 
 /**

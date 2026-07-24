@@ -70,6 +70,12 @@ export interface Config {
     // Grupo/chat JID que recebe alertas de saúde (ex.: cookie expirado). Vazio = só loga.
     alertGroup: string;
   };
+  moderation: {
+    // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
+    blockEmojis: string[];
+    // JIDs extra autorizados a moderar (além da própria conta do bot, que sempre vale).
+    moderatorJids: string[];
+  };
   shopee: {
     enabled: boolean;
     appId: string;
@@ -150,6 +156,12 @@ export const config: Config = {
   },
   admin: {
     alertGroup: process.env.ADMIN_ALERT_GROUP ?? '',
+  },
+  moderation: {
+    blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length
+      ? list(process.env.MODERATION_BLOCK_EMOJIS)
+      : ['❌', '✖️', '✖', '🚫', '❎'],
+    moderatorJids: list(process.env.MODERATION_MODERATOR_JIDS),
   },
   shopee: {
     // Habilitado quando há credenciais Open API.

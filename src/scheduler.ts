@@ -112,8 +112,8 @@ export async function postNiche(
     const groupId = niche.groups[i]!;
     const text = formatDeal(deal, { variant: i });
     try {
-      await sendToGroup(sock, groupId, text, image);
-      store.markPosted(deal, groupId);
+      const msgId = await sendToGroup(sock, groupId, text, image);
+      store.markPosted(deal, groupId, msgId);
       logger.info({ niche: niche.name, groupId, id: deal.id, title: deal.title }, '[Scheduler] Oferta postada.');
     } catch (err) {
       logger.error({ err: (err as Error).message, groupId }, '[Scheduler] Falha ao postar no grupo.');

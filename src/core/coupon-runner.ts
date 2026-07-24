@@ -262,8 +262,8 @@ export async function runCouponPost(
   for (let i = 0; i < groups.length; i += 1) {
     const groupId = groups[i]!;
     try {
-      await sendToGroup(sock, groupId, text, image);
-      store.markPosted(deal, groupId);
+      const msgId = await sendToGroup(sock, groupId, text, image);
+      store.markPosted(deal, groupId, msgId);
       posted += 1;
       logger.info({ groupId, produto: deal.title, cupom: coupon.couponId }, '[coupon] Perfume+cupom enviado.');
     } catch (err) {

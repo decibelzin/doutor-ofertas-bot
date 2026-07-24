@@ -9,6 +9,7 @@ import makeWASocket, {
 import qrcode from 'qrcode-terminal';
 import { config } from '../config';
 import { logger } from '../logger';
+import { attachModeration } from './moderation';
 
 let sock: WASocket | null = null;
 let connected = false;
@@ -46,6 +47,7 @@ export async function connectWhatsApp(): Promise<WASocket> {
   });
 
   sock.ev.on('creds.update', saveCreds);
+  attachModeration(sock); // moderação por reação ❌ (veta produto)
 
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
