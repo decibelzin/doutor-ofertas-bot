@@ -30,28 +30,40 @@ function isModerator(reactorJid: string | undefined, fromMe: boolean): boolean {
 export function attachModeration(sock: WASocket): void {
   sock.ev.on('messages.reaction', (reactions) => {
     for (const { key, reaction } of reactions) {
-      const emoji = reaction?.text ?? ''; // vazio = reação REMOVIDA → ignora
-      if (!emoji || !config.moderation.blockEmojis.includes(emoji)) continue;
-
+      const emoji = reaction?.text ?? ''; // vazio = reação REMOVIDA
       const fromMe = Boolean(reaction?.key?.fromMe);
       const reactorJid = reaction?.key?.participant ?? reaction?.key?.remoteJid ?? undefined;
-      if (!isModerator(reactorJid ?? undefined, fromMe)) continue;
-
       const msgId = key?.id ?? undefined;
+
+      // Diagnóstico: mostra TODA reação recebida (ajuda a configurar/depurar).
+      logger.info({ emoji, fromMe, reactor: reactorJid, msgId }, '[Moderação] Reação recebida.');
+
+      if (!emoji) continue; // reação removida
+      if (!config.moderation.blockEmojis.includes(emoji)) {
+        logger.debug({ emoji }, '[Moderação] Emoji não é de veto — ignorado.');
+        continue;
+      }
+      if (!isModerator(reactorJid ?? undefined, fromMe)) {
+        logger.warn(
+          { reactor: reactorJid },
+          '[Moderação] Reação de veto de número NÃO AUTORIZADO — ignorada. Autorize pondo o número em MODERATION_MODERATOR_JIDS no .env.'
+        );
+        continue;
+      }
       if (!msgId) continue;
 
       const found = store.dealByMessage(msgId);
       if (!found) {
         logger.warn(
           { msgId },
-          '[Moderação] ❌ recebido, mas não achei o produto dessa mensagem (post antigo ou fora do histórico).'
+          '[Moderação] Veto recebido, mas não achei o produto dessa mensagem (post ANTIGO, feito antes desta feature). Reaja num post novo.'
         );
         continue;
       }
       store.blockProduct(found.dealId, found.title);
       logger.warn(
         { produto: found.title, id: found.dealId, totalVetados: store.blockedCount() },
-        '[Moderação] Produto VETADO por reação — nunca mais será postado.'
+        '[Moderação] ✅ Produto VETADO por reação — nunca mais será postado.'
       );
     }
   });
