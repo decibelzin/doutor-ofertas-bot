@@ -2,6 +2,7 @@ import axios from 'axios';
 import { config } from '../../config';
 import { logger } from '../../logger';
 import { alertAuthDegraded } from '../../core/health';
+import { isPerfumeProduct } from './coupons';
 
 /**
  * CUPONS PÚBLICOS DO ML (mercadolivre.com.br/cupons) — os mesmos que os canais
@@ -25,6 +26,10 @@ const URL = 'https://www.mercadolivre.com.br/cupons';
  */
 const SPECIAL_API =
   'https://www.mercadolivre.com.br/cupons/api/main-data/filtered?page=1&special_coupon=true&origin=main';
+/** API paginada do catálogo INTEIRO de cupons (~75 páginas x 30). */
+const ALL_API = 'https://www.mercadolivre.com.br/cupons/api/main-data/filtered';
+/** Teto de páginas por varredura (75 cobre o catálogo hoje; folga pra crescer). */
+const MAX_PAGES = 90;
 /** Acima disso o `code` é token opaco, não código digitável. */
 const MAX_READABLE_CODE_LEN = 25;
 const UA =
@@ -91,11 +96,17 @@ function asText(v: unknown): string | null {
   return null;
 }
 
-const PERFUME_DOMAIN = /PERFUME|FRAGRANC|COLOGNE/i;
-const PERFUME_TEXT = /\b(perfum|parfum|eau de|\bedt\b|\bedp\b|col[oô]nia|fragr[aâ]ncia)\b/i;
+const PERFUME_DOMAIN = /^MLB-PERFUMES$|FRAGRANC|COLOGNE/i;
+const PERFUME_TEXT = /\b(perfum|parfum|eau de|\bedt\b|\bedp\b)\b/i;
 
+/**
+ * É item de perfumaria? Domínio MLB-PERFUMES crava; senão exige que o título
+ * passe no mesmo crivo das ofertas (`isPerfumeProduct`), que corta difusor de
+ * ambiente, sabonete, kit banho e afins — falsos-positivos de "fragrância".
+ */
 function isPerfumeItem(i: PublicCouponItem): boolean {
-  return PERFUME_DOMAIN.test(i.domainId) || PERFUME_TEXT.test(i.altText);
+  if (PERFUME_DOMAIN.test(i.domainId)) return true;
+  return isPerfumeProduct(i.altText);
 }
 
 /**
@@ -231,37 +242,107 @@ export async function fetchSpecialCoupons({
   return out;
 }
 
+/** Texto pode vir em snake_case (HTML) ou camelCase (API). */
+function pick(o: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const k of keys) if (o[k] !== undefined) return o[k];
+  return undefined;
+}
+
+/** Converte um cupom da API (camelCase) no nosso PublicCoupon, ou null se não tem perfume. */
+function apiCouponToPublic(c: Record<string, unknown>): PublicCoupon | null {
+  const rawItems = (pick(c, 'items') as Record<string, unknown>[] | undefined) ?? [];
+  const items: PublicCouponItem[] = rawItems.map((i) => ({
+    altText: String(pick(i, 'altText', 'alt_text') ?? ''),
+    domainId: String(pick(i, 'domainId', 'domain_id') ?? ''),
+    imageUrl: (pick(i, 'imageUrl', 'image_url') as string | undefined) ?? null,
+  }));
+  const title = asText(pick(c, 'title')) ?? '(sem título)';
+  const perfumeItems = items.filter(isPerfumeItem);
+  // Aceita também quando o TÍTULO do cupom é de perfumaria ("15% OFF em Perfumes").
+  if (perfumeItems.length === 0 && !PERFUME_TEXT.test(title)) return null;
+
+  const amount = (pick(c, 'amount') as Record<string, unknown> | undefined) ?? {};
+  const campaignId = String(pick(c, 'campaignId', 'campaign_id') ?? '');
+  if (!campaignId) return null;
+  const code = String(pick(c, 'code') ?? '');
+
+  return {
+    campaignId,
+    itemIds: [],
+    title,
+    minAmountText: asText(pick(amount, 'minAmount', 'min_amount')),
+    capAmountText: asText(pick(amount, 'capAmount', 'cap_amount')),
+    expirationText: asText(pick(c, 'expirationDate', 'expiration_date')),
+    activationType: (pick(c, 'activationType', 'activation_type') as string | undefined) ?? null,
+    activationUrl: code ? `${URL}?code=${encodeURIComponent(code)}` : null,
+    perfumeItems,
+    items,
+  };
+}
+
 /**
- * Busca os cupons públicos vigentes que incluem PERFUME. Cacheado por TTL (a
- * página é pesada e o conjunto muda devagar).
+ * Busca TODOS os cupons públicos de perfumaria, varrendo a API paginada
+ * (~75 páginas). Muito superior a raspar o HTML da página, que só expõe as
+ * primeiras dezenas — a varredura completa acha ~50 cupons de perfumaria contra
+ * ~2 do HTML. Cacheado por TTL (o conjunto muda devagar).
  */
 export async function fetchPublicPerfumeCoupons({
   ttlMs = config.mercadoLivre.publicCouponsTtlMinutes * 60 * 1000,
-}: { ttlMs?: number } = {}): Promise<PublicCoupon[]> {
+  maxPages = MAX_PAGES,
+  delayMs = 350,
+}: { ttlMs?: number; maxPages?: number; delayMs?: number } = {}): Promise<PublicCoupon[]> {
   if (!publicCouponsEnabled()) return [];
   if (cache.at && Date.now() - cache.at < ttlMs) return cache.coupons;
 
-  const res = await axios.get<string>(URL, {
-    headers: {
-      'User-Agent': UA,
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-      Cookie: config.mercadoLivre.affiliateCookie,
-    },
-    timeout: 30000,
-    responseType: 'text',
-    validateStatus: () => true,
-    maxRedirects: 5,
-  });
-  const finalUrl: string = (res.request as { res?: { responseUrl?: string } })?.res?.responseUrl ?? URL;
-  if (finalUrl.includes('account-verification') || finalUrl.includes('/login')) {
-    alertAuthDegraded('cupons-publicos-sem-sessao');
-    return cache.coupons; // devolve o último bom em vez de vazio
-  }
-  if (res.status !== 200) return cache.coupons;
+  const out: PublicCoupon[] = [];
+  const seen = new Set<string>();
+  let pages = 0;
 
-  const coupons = parsePublicCouponsHtml(res.data);
+  for (let page = 1; page <= maxPages; page += 1) {
+    let list: Record<string, unknown>[];
+    try {
+      const res = await axios.get<{ coupons?: Record<string, unknown>[] }>(
+        `${ALL_API}?page=${page}&all_coupons=true&origin=main`,
+        {
+          headers: {
+            'User-Agent': UA,
+            Accept: 'application/json',
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            Cookie: config.mercadoLivre.affiliateCookie,
+          },
+          timeout: 20000,
+          validateStatus: () => true,
+        }
+      );
+      if (res.status !== 200) break;
+      list = Array.isArray(res.data?.coupons) ? res.data.coupons : [];
+    } catch {
+      break;
+    }
+    if (list.length === 0) break; // fim do catálogo
+    pages += 1;
+
+    for (const c of list) {
+      const id = String(pick(c, 'campaignId', 'campaign_id') ?? '');
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const parsed = apiCouponToPublic(c);
+      if (parsed) out.push(parsed);
+    }
+    if (page < maxPages) await new Promise((r) => setTimeout(r, delayMs));
+  }
+
+  // Varredura sem resultado com cache cheio = sessão caiu (falha silenciosa).
+  if (pages === 0 && cache.coupons.length > 0) {
+    alertAuthDegraded('cupons-publicos-sem-sessao');
+    return cache.coupons;
+  }
+
   cache.at = Date.now();
-  cache.coupons = coupons;
-  logger.info({ count: coupons.length }, '[ML/cupons-públicos] Cupons de perfumaria encontrados.');
-  return coupons;
+  cache.coupons = out;
+  logger.info(
+    { paginas: pages, varridos: seen.size, perfumaria: out.length },
+    '[ML/cupons-públicos] Catálogo varrido — cupons de perfumaria.'
+  );
+  return out;
 }
