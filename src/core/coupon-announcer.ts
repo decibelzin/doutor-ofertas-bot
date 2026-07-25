@@ -55,7 +55,12 @@ function feedLine(c: FeedCoupon): string {
 
 /** Monta a mensagem no formato "CUPOM LIBERADO" (multi-cupom). */
 export function formatCouponAnnouncement(coupons: SpecialCoupon[], feed: FeedCoupon[] = []): string {
-  const blocks: string[] = ['🚨 *NOVOS CUPONS MERCADO LIVRE!*', '*Usem nos perfumes enviados anteriormente* 🔥'];
+  // "@all" literal no texto: o broadcast já manda o array `mentions` (que é o
+  // que notifica), mas sem o texto o aviso passa despercebido no app.
+  const blocks: string[] = [
+    '🚨 *NOVOS CUPONS MERCADO LIVRE!* @all',
+    '*Usem nos perfumes enviados anteriormente* 🔥',
+  ];
 
   const lines: string[] = [];
   // Cupons de site inteiro (agregador) primeiro — são os mais fortes.
