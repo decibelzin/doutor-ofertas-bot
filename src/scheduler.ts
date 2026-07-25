@@ -14,6 +14,7 @@ import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupo
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
 import { runPublicCouponPost, runCodeCouponPost } from './core/public-coupon-runner';
 import { announceNewCoupons } from './core/coupon-announcer';
+import { refreshGroupStatus } from './core/group-status';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -322,6 +323,28 @@ function startCouponAutomation(): void {
   }
 }
 
+/**
+ * Atualiza o JSON que o SITE lê (contagem de membros + link do grupo com vaga).
+ * Bot e site na mesma VPS → escreve direto na pasta servida, sem deploy.
+ */
+function scheduleGroupStatus(): void {
+  const min = config.site.refreshMinutes;
+  if (min <= 0) return; // desligado
+  const tick = async (): Promise<void> => {
+    const sock = await whenReady();
+    await refreshGroupStatus(sock);
+  };
+  // Primeira atualização logo após o arranque, pro site não ficar sem dado.
+  setTimeout(() => {
+    tick().catch((err) => logger.error({ err: (err as Error).message }, '[Scheduler] Erro no status dos grupos.'));
+  }, 20 * 1000);
+
+  setInterval(() => {
+    tick().catch((err) => logger.error({ err: (err as Error).message }, '[Scheduler] Erro no status dos grupos.'));
+  }, min * 60 * 1000);
+  logger.info({ aCadaMin: min, arquivo: config.site.groupsFile }, '[Scheduler] Status dos grupos pro site LIGADO.');
+}
+
 /** Inicia um loop por nicho (+ automação de cupom, se ligada). */
 export function startScheduler(): void {
   const niches = loadNiches();
@@ -348,4 +371,5 @@ export function startScheduler(): void {
 
   for (const niche of niches) scheduleNiche(niche, { immediate: true });
   startCouponAutomation();
+  scheduleGroupStatus();
 }

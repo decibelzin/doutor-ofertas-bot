@@ -196,3 +196,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Vagas restantes (preenchido pelo JS a partir do groups.json) */
+.vagas {
+  margin-top: 18px;
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: .01em;
+}

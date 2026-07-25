@@ -22,7 +22,8 @@
     "post-perfume-coupon": "tsx src/cli/post-perfume-coupon.ts",
     "coupon-probe": "tsx src/cli/coupon-probe.ts",
     "ml-link": "tsx src/cli/ml-link.ts",
-    "group-links": "tsx src/cli/group-links.ts"
+    "group-links": "tsx src/cli/group-links.ts",
+    "group-status": "tsx src/cli/group-status.ts"
   },
   "engines": {
     "node": ">=20"

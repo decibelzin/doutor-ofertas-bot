@@ -78,6 +78,15 @@ export interface Config {
     // Grupo/chat JID que recebe alertas de saúde (ex.: cookie expirado). Vazio = só loga.
     alertGroup: string;
   };
+  site: {
+    // Arquivo JSON que o SITE lê (bot e site na mesma VPS -> escreve direto na
+    // pasta servida). Ex.: /var/www/doutorofertas/groups.json
+    groupsFile: string;
+    // Teto OPERACIONAL por grupo (folga sobre os 1024 do WhatsApp, evita corrida).
+    groupLimit: number;
+    // De quanto em quanto tempo atualizar o status dos grupos (min). 0 = desliga.
+    refreshMinutes: number;
+  };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
     blockEmojis: string[];
@@ -174,6 +183,11 @@ export const config: Config = {
   },
   admin: {
     alertGroup: process.env.ADMIN_ALERT_GROUP ?? '',
+  },
+  site: {
+    groupsFile: process.env.SITE_GROUPS_FILE ?? './website/groups.json',
+    groupLimit: num(process.env.SITE_GROUP_LIMIT, 1000),
+    refreshMinutes: num(process.env.SITE_REFRESH_MINUTES, 15),
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length

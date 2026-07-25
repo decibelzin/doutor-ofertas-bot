@@ -36,7 +36,9 @@
     <p class="tagline">Perfume bom, <em>preço justo</em>.</p>
     <p class="sub">Garimpamos ofertas e cupons de perfume todo dia — árabes, importados e nacionais. Você recebe no WhatsApp, de graça.</p>
 
-    <a class="cta" href="#grupos">
+    <p class="vagas" id="vagas" hidden></p>
+
+    <a class="cta" id="cta" href="#grupos" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.3-5-4.5-.1-.2-1.2-1.5-1.2-2.9s.7-2 1-2.3c.2-.3.5-.4.7-.4h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.4.1.6-.1l.9-1c.2-.2.3-.2.6-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.4z"/>
       </svg>
@@ -114,6 +116,32 @@
 
 <script>
   document.getElementById('ano').textContent = new Date().getFullYear();
+
+  /* Grupo com vaga: o bot (mesma VPS) reescreve groups.json a cada poucos
+     minutos com a contagem real e o link de convite. Apontamos o botao pro
+     primeiro grupo com vaga. Sem o arquivo, fica o href de reserva do HTML —
+     a pagina nunca fica sem CTA. */
+  (async () => {
+    const cta = document.getElementById('cta');
+    const vagas = document.getElementById('vagas');
+    if (!cta) return;
+    try {
+      const res = await fetch('./groups.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.join) {
+        cta.href = data.join;
+        const g = (data.groups || []).find((x) => x.link === data.join);
+        if (vagas && g && g.vacancies > 0 && g.vacancies <= 300) {
+          vagas.textContent = '⚡ restam ' + g.vacancies + ' vagas neste grupo';
+          vagas.hidden = false;
+        }
+      } else if (vagas) {
+        vagas.textContent = '⚠️ grupos lotados — turma nova em breve';
+        vagas.hidden = false;
+      }
+    } catch (e) { /* offline: mantem o href de reserva */ }
+  })();
 </script>
 </body>
 </html>
