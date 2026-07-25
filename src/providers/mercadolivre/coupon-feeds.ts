@@ -70,6 +70,13 @@ const FEEDS: Feed[] = [
     codeAttr: 'data-code',
   },
   {
+    name: 'thiagorodrigo',
+    url: 'https://thiagorodrigo.com.br/cupom-desconto-mercado-livre/',
+    mode: 'selector',
+    codeSelector: '[data-full-code]',
+    codeAttr: 'data-full-code',
+  },
+  {
     // Publica numa página DATADA (muda todo dia): descobrimos o link mais
     // recente pela home. Conteúdo em TABELA (REGRA | CUPOM | LINK).
     name: 'melhorescartoes',
