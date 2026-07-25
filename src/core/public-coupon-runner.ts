@@ -7,10 +7,15 @@ import { collectNicheDeals } from './selector';
 import { loadNiches } from './niches';
 import { sendToGroup, fetchDealImage } from '../whatsapp/sender';
 import { enrichWithShortLink } from '../providers/mercadolivre/shortlink';
-import { formatPublicCouponPost } from '../format/coupon';
+import { formatPublicCouponPost, formatCodeCouponPost } from '../format/coupon';
 import { resolvePreset } from '../format/title';
-import { isPerfumeProduct } from '../providers/mercadolivre/coupons';
-import { fetchPublicPerfumeCoupons, type PublicCoupon } from '../providers/mercadolivre/public-coupons';
+import { isPerfumeProduct, scrapeCouponProducts } from '../providers/mercadolivre/coupons';
+import {
+  fetchPublicPerfumeCoupons,
+  fetchSpecialCoupons,
+  type PublicCoupon,
+  type SpecialCoupon,
+} from '../providers/mercadolivre/public-coupons';
 import { sleep, randomDelay } from '../util/time';
 import type { Deal } from './deal';
 
@@ -83,6 +88,83 @@ export async function pickPublicCouponDeal(): Promise<{ coupon: PublicCoupon; de
     }
   }
   return null;
+}
+
+export interface CodeCouponPostResult {
+  coupon: SpecialCoupon;
+  deal: Deal;
+  text: string;
+  groups: string[];
+  posted: number;
+  dry: boolean;
+}
+
+/**
+ * Escolhe (cupom COM CÓDIGO, perfume elegível) — o formato "cupom relâmpago"
+ * dos concorrentes. Raspa a listing de elegíveis do cupom e fica com o perfume
+ * de maior desconto ainda postável.
+ */
+export async function pickCodeCouponDeal(): Promise<{ coupon: SpecialCoupon; deal: Deal } | null> {
+  const coupons = await fetchSpecialCoupons();
+  if (coupons.length === 0) return null;
+
+  const cooldownMs = config.dedup.cooldownDays * DAY_MS;
+  for (const coupon of coupons) {
+    if (!coupon.productsUrl) continue;
+    let products: Deal[];
+    try {
+      products = await scrapeCouponProducts(coupon.productsUrl);
+    } catch (err) {
+      logger.debug({ err: (err as Error).message, cupom: coupon.code }, '[cupom-código] Falha ao raspar elegíveis.');
+      continue;
+    }
+    const perfumes = products
+      .filter((d) => isPerfumeProduct(d.title))
+      .filter((d) => store.canPostNow(d.id, d.discountPercent, cooldownMs))
+      .sort((a, b) => b.discountPercent - a.discountPercent);
+    if (perfumes.length > 0) return { coupon, deal: perfumes[0]! };
+  }
+  return null;
+}
+
+/** Escolhe e posta UM perfume + cupom COM CÓDIGO. `dry` só monta o texto. */
+export async function runCodeCouponPost(
+  sock: WASocket | null,
+  opts: { dry?: boolean } = {}
+): Promise<CodeCouponPostResult | null> {
+  const chosen = await pickCodeCouponDeal();
+  if (!chosen) {
+    logger.info('[cupom-código] Nenhum cupom com código casou com perfume elegível.');
+    return null;
+  }
+  const { coupon, deal } = chosen;
+
+  await enrichWithShortLink(deal);
+  const text = formatCodeCouponPost(deal, coupon);
+  const groups = couponTargetGroups();
+
+  if (opts.dry) return { coupon, deal, text, groups, posted: 0, dry: true };
+  if (!sock) throw new Error('runCodeCouponPost: sock ausente pra envio real');
+  if (groups.length === 0) return null;
+
+  const preset = resolvePreset(deal.title, deal.id);
+  const image = await fetchDealImage(deal, preset?.imagem);
+  let posted = 0;
+  for (let i = 0; i < groups.length; i += 1) {
+    const groupId = groups[i]!;
+    try {
+      const msgId = await sendToGroup(sock, groupId, text, image);
+      store.markPosted(deal, groupId, msgId);
+      posted += 1;
+      logger.info({ groupId, produto: deal.title, cupom: coupon.code }, '[cupom-código] Enviado.');
+    } catch (err) {
+      logger.error({ err: (err as Error).message, groupId }, '[cupom-código] Falha ao enviar.');
+    }
+    if (i < groups.length - 1) {
+      await sleep(randomDelay(config.throttle.groupDelayMinMs, config.throttle.groupDelayMaxMs));
+    }
+  }
+  return { coupon, deal, text, groups, posted, dry: false };
 }
 
 /** Escolhe e posta UM perfume + cupom público. `dry` só monta o texto. */

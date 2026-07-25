@@ -17,6 +17,16 @@ import { alertAuthDegraded } from '../../core/health';
  */
 
 const URL = 'https://www.mercadolivre.com.br/cupons';
+/**
+ * API JSON dos cupons. O filtro `special_coupon=true` é o ÚNICO que devolve o
+ * CÓDIGO LEGÍVEL (ex.: "AFILIADOPET26") no campo `code`/`inputCode`; todos os
+ * outros filtros — e o HTML da página — só trazem um token opaco de 88 chars.
+ * Descoberto por engenharia reversa do bundle smart-coupons-frontend.
+ */
+const SPECIAL_API =
+  'https://www.mercadolivre.com.br/cupons/api/main-data/filtered?page=1&special_coupon=true&origin=main';
+/** Acima disso o `code` é token opaco, não código digitável. */
+const MAX_READABLE_CODE_LEN = 25;
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36';
 
@@ -52,6 +62,20 @@ export interface PublicCoupon {
 }
 
 const cache: { at: number; coupons: PublicCoupon[] } = { at: 0, coupons: [] };
+const specialCache: { at: number; coupons: SpecialCoupon[] } = { at: 0, coupons: [] };
+
+/** Cupom com CÓDIGO DIGITÁVEL (o "cupom relâmpago" que os concorrentes postam). */
+export interface SpecialCoupon {
+  campaignId: string;
+  /** Código legível pro cliente digitar. Ex.: "AFILIADOPET26". */
+  code: string;
+  title: string;
+  minAmountText: string | null;
+  capAmountText: string | null;
+  expirationText: string | null;
+  /** Listing dos produtos elegíveis (lista.mercadolivre.com.br/...). */
+  productsUrl: string | null;
+}
 
 export function publicCouponsEnabled(): boolean {
   return Boolean(config.mercadoLivre.affiliateCookie);
@@ -147,6 +171,64 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
     });
   }
   return [...byCampaign.values()];
+}
+
+/**
+ * Cupons com CÓDIGO DIGITÁVEL vigentes (filtro `special_coupon`). São poucos
+ * (3–5) e rotativos — vários vencem no mesmo dia —, então vale consultar de
+ * hora em hora pra pegar os novos cedo. É o equivalente ao "CUPOM RELÂMPAGO"
+ * dos concorrentes.
+ */
+export async function fetchSpecialCoupons({
+  ttlMs = 60 * 60 * 1000,
+}: { ttlMs?: number } = {}): Promise<SpecialCoupon[]> {
+  if (!publicCouponsEnabled()) return [];
+  if (specialCache.at && Date.now() - specialCache.at < ttlMs) return specialCache.coupons;
+
+  const res = await axios.get<{ coupons?: Record<string, unknown>[] }>(SPECIAL_API, {
+    headers: {
+      'User-Agent': UA,
+      Accept: 'application/json',
+      'Accept-Language': 'pt-BR,pt;q=0.9',
+      Cookie: config.mercadoLivre.affiliateCookie,
+    },
+    timeout: 20000,
+    validateStatus: () => true,
+  });
+  if (res.status !== 200) return specialCache.coupons;
+
+  const list = Array.isArray(res.data?.coupons) ? res.data.coupons : [];
+  // Sem sessão o endpoint responde 200 com lista VAZIA (falha silenciosa).
+  if (list.length === 0 && specialCache.coupons.length > 0) {
+    alertAuthDegraded('cupons-especiais-vazio');
+    return specialCache.coupons;
+  }
+
+  const out: SpecialCoupon[] = [];
+  for (const c of list) {
+    const code = String(c.code ?? c.inputCode ?? '');
+    // Só o código LEGÍVEL interessa; token opaco (88 chars) não serve pra postar.
+    if (!code || code.length > MAX_READABLE_CODE_LEN) continue;
+    const amount = (c.amount ?? {}) as Record<string, unknown>;
+    const action = (c.action ?? {}) as Record<string, unknown>;
+    out.push({
+      campaignId: String(c.campaign_id ?? c.campaignId ?? ''),
+      code,
+      title: (asText(c.title) ?? '').trim() || '(sem título)',
+      minAmountText: asText(amount.min_amount),
+      capAmountText: asText(amount.cap_amount),
+      expirationText: asText(c.expiration_date) ?? asText(c.expirationDate),
+      productsUrl: typeof action.value === 'string' ? action.value : null,
+    });
+  }
+
+  specialCache.at = Date.now();
+  specialCache.coupons = out;
+  logger.info(
+    { count: out.length, codigos: out.map((c) => c.code) },
+    '[ML/cupons-especiais] Cupons com código digitável.'
+  );
+  return out;
 }
 
 /**

@@ -9,7 +9,11 @@
  * sem código fixo no bot.
  */
 import { logger } from '../logger';
-import { fetchPublicPerfumeCoupons, publicCouponsEnabled } from '../providers/mercadolivre/public-coupons';
+import {
+  fetchPublicPerfumeCoupons,
+  fetchSpecialCoupons,
+  publicCouponsEnabled,
+} from '../providers/mercadolivre/public-coupons';
 
 async function main(): Promise<void> {
   if (!publicCouponsEnabled()) {
@@ -17,9 +21,22 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // 1) Cupons com CÓDIGO DIGITÁVEL (o "cupom relâmpago" dos concorrentes).
+  const special = await fetchSpecialCoupons({ ttlMs: 0 });
+  console.log(`\n===== CUPONS COM CÓDIGO (${special.length}) =====`);
+  for (const c of special) {
+    console.log(`\n🎟️  *${c.code}*  — ${c.title}`);
+    const cond = [c.minAmountText, c.capAmountText].filter(Boolean).join(' · ');
+    if (cond) console.log(`    ${cond}`);
+    if (c.expirationText) console.log(`    ⏳ ${c.expirationText}`);
+    if (c.productsUrl) console.log(`    produtos: ${c.productsUrl.slice(0, 80)}`);
+  }
+  if (special.length === 0) console.log('(nenhum no momento)');
+
+  // 2) Cupons de ativar por clique que incluem perfume.
   const coupons = await fetchPublicPerfumeCoupons({ ttlMs: 0 }); // sempre fresco no CLI
   if (coupons.length === 0) {
-    console.log('Nenhum cupom público com perfume no momento.');
+    console.log('\nNenhum cupom público (de ativar) com perfume no momento.');
     process.exit(0);
   }
 

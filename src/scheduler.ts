@@ -12,7 +12,7 @@ import { setAlertSink, alertAuthDegraded } from './core/health';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
-import { runPublicCouponPost } from './core/public-coupon-runner';
+import { runPublicCouponPost, runCodeCouponPost } from './core/public-coupon-runner';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -231,6 +231,20 @@ async function postCouponTick(): Promise<void> {
     return Boolean(r);
   };
 
+  // Cupom COM CÓDIGO vem primeiro: é o formato mais forte (igual ao "cupom
+  // relâmpago" dos concorrentes) e são poucos/rotativos — não desperdiçar.
+  const tryCode = async (): Promise<boolean> => {
+    const r = await runCodeCouponPost(sock, {});
+    if (r) {
+      logger.info(
+        { cupom: r.coupon.code, produto: r.deal.title, grupos: r.posted },
+        '[Scheduler] Perfume + cupom COM CÓDIGO postado.'
+      );
+    }
+    return Boolean(r);
+  };
+
+  if (await tryCode()) return;
   const first = publicFirst ? tryPublic : trySeller;
   const second = publicFirst ? trySeller : tryPublic;
   if (!(await first())) await second();
