@@ -13,6 +13,7 @@ import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
 import { runPublicCouponPost, runCodeCouponPost } from './core/public-coupon-runner';
+import { announceNewCoupons } from './core/coupon-announcer';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -268,6 +269,29 @@ function scheduleCouponPost(opts: { immediate?: boolean } = {}): void {
   }, delay);
 }
 
+/**
+ * Checa se surgiram cupons com código NOVOS e dispara o anúncio "CUPOM LIBERADO"
+ * (banner + lista de códigos, @all) — sozinho, sem intervenção.
+ */
+async function announceTick(): Promise<void> {
+  if (!isWithinWindow()) return; // não acorda ninguém fora do horário
+  const sock = await whenReady();
+  const r = await announceNewCoupons(sock, {});
+  if (r) {
+    logger.info({ novos: r.newCodes, grupos: r.posted }, '[Scheduler] Anúncio de cupons novos enviado.');
+  }
+}
+
+/** Loop de checagem de cupons novos pra anunciar. */
+function scheduleCouponAnnounce(): void {
+  const base = Math.max(5, config.coupon.announceCheckMinutes) * 60 * 1000;
+  setTimeout(() => {
+    announceTick()
+      .catch((err) => logger.error({ err: (err as Error).message }, '[Scheduler] Erro no anúncio de cupom.'))
+      .finally(() => scheduleCouponAnnounce());
+  }, base);
+}
+
 /** Liga a automação de cupom se habilitada + credenciais do painel presentes. */
 function startCouponAutomation(): void {
   if (!couponsEnabled()) return; // sem cookie/csrf → nada a fazer
@@ -287,6 +311,15 @@ function startCouponAutomation(): void {
   }
   scheduleCouponDiscovery();
   scheduleCouponPost({ immediate: true });
+
+  // Anúncio "CUPOM LIBERADO" quando surgir código novo (checa periodicamente).
+  if (config.coupon.announceAuto) {
+    logger.info(
+      { checarMin: config.coupon.announceCheckMinutes, intervaloMinH: config.coupon.announceMinGapHours },
+      '[Scheduler] Anúncio automático de cupons novos LIGADO.'
+    );
+    scheduleCouponAnnounce();
+  }
 }
 
 /** Inicia um loop por nicho (+ automação de cupom, se ligada). */

@@ -1,0 +1,137 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import type { WASocket } from '@whiskeysockets/baileys';
+import { config } from '../config';
+import { logger } from '../logger';
+import { loadNiches } from './niches';
+import { broadcastCoupon } from '../whatsapp/sender';
+import { writeFileAtomic } from '../util/atomic';
+import { fetchSpecialCoupons, type SpecialCoupon } from '../providers/mercadolivre/public-coupons';
+
+/**
+ * ANÚNCIO AUTOMÁTICO DE CUPONS NOVOS ("CUPOM LIBERADO"): quando aparecem
+ * códigos que ainda não anunciamos, dispara UMA mensagem com o banner + a lista
+ * de todos os códigos vigentes (formato dos canais concorrentes).
+ *
+ * Cuidados:
+ *  - só dispara se houver código NOVO (nunca reanuncia o mesmo);
+ *  - respeita um intervalo mínimo entre anúncios (@all é sensível a spam/ban);
+ *  - histórico persistido em data/announced-coupons.json.
+ */
+
+const STATE_FILE = path.resolve('data/announced-coupons.json');
+
+interface AnnouncedState {
+  /** code -> quando foi anunciado (epoch ms). */
+  announced: Record<string, number>;
+  lastAnnounceAt: number;
+}
+
+function loadState(): AnnouncedState {
+  try {
+    const s = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) as AnnouncedState;
+    return { announced: s.announced ?? {}, lastAnnounceAt: s.lastAnnounceAt ?? 0 };
+  } catch {
+    return { announced: {}, lastAnnounceAt: 0 };
+  }
+}
+
+function saveState(s: AnnouncedState): void {
+  writeFileAtomic(STATE_FILE, JSON.stringify(s, null, 2));
+}
+
+/** Grupos-alvo do anúncio: todos os grupos de todos os nichos. */
+function allGroups(): string[] {
+  return [...new Set(loadNiches().flatMap((n) => n.groups))];
+}
+
+/** Monta a mensagem no formato "CUPOM LIBERADO" (multi-cupom). */
+export function formatCouponAnnouncement(coupons: SpecialCoupon[]): string {
+  const blocks: string[] = ['🚨 *NOVOS CUPONS MERCADO LIVRE!*', '*Usem nos perfumes enviados anteriormente* 🔥'];
+
+  const lines = coupons.map((c) => {
+    const cond = c.minAmountText ? ` ${c.minAmountText.toLowerCase()}` : '';
+    return `🎟️ ${c.title.trim()}${cond}: *${c.code}*`;
+  });
+  blocks.push(lines.join('\n\n'));
+
+  const exp = coupons.map((c) => c.expirationText).find(Boolean);
+  if (exp) blocks.push(`⏳ _${exp}_`);
+
+  blocks.push('👉 Ative em: mercadolivre.com.br/cupons');
+  if (config.coupon.searchLink) blocks.push(`🛒 ${config.coupon.searchLink}`);
+  return blocks.join('\n\n');
+}
+
+export interface AnnounceResult {
+  newCodes: string[];
+  text: string;
+  groups: string[];
+  posted: number;
+  dry: boolean;
+}
+
+/**
+ * Anuncia os cupons novos, se houver. Retorna null quando não há nada novo (ou
+ * o intervalo mínimo ainda não passou).
+ */
+export async function announceNewCoupons(
+  sock: WASocket | null,
+  opts: { dry?: boolean; force?: boolean } = {}
+): Promise<AnnounceResult | null> {
+  const coupons = await fetchSpecialCoupons();
+  if (coupons.length === 0) return null;
+
+  const state = loadState();
+  const newOnes = coupons.filter((c) => !state.announced[c.code]);
+  if (newOnes.length === 0 && !opts.force) {
+    logger.debug('[anúncio-cupom] Nenhum código novo.');
+    return null;
+  }
+
+  // Anti-spam: intervalo mínimo entre anúncios (@all incomoda e arrisca ban).
+  const minGapMs = config.coupon.announceMinGapHours * 60 * 60 * 1000;
+  const since = Date.now() - state.lastAnnounceAt;
+  if (!opts.force && !opts.dry && state.lastAnnounceAt > 0 && since < minGapMs) {
+    logger.info(
+      { faltamMin: Math.round((minGapMs - since) / 60000), novos: newOnes.map((c) => c.code) },
+      '[anúncio-cupom] Código novo detectado, mas dentro do intervalo mínimo — adiando.'
+    );
+    return null;
+  }
+
+  // Anuncia TODOS os vigentes (não só os novos) — a mensagem é uma lista.
+  const text = formatCouponAnnouncement(coupons);
+  const groups = allGroups();
+
+  if (opts.dry) {
+    return { newCodes: newOnes.map((c) => c.code), text, groups, posted: 0, dry: true };
+  }
+  if (!sock) throw new Error('announceNewCoupons: sock ausente pra envio real');
+  if (groups.length === 0) {
+    logger.error('[anúncio-cupom] Nenhum grupo configurado.');
+    return null;
+  }
+
+  // Banner fixo (opcional) — igual ao "CUPOM LIBERADO" dos concorrentes.
+  let banner: Buffer | null = null;
+  const bannerPath = config.coupon.bannerPath;
+  if (bannerPath && fs.existsSync(bannerPath)) {
+    banner = fs.readFileSync(bannerPath);
+  } else if (bannerPath) {
+    logger.warn({ bannerPath }, '[anúncio-cupom] Banner não encontrado — enviando só texto.');
+  }
+
+  const ok = await broadcastCoupon(sock, groups, text, banner);
+
+  const now = Date.now();
+  for (const c of coupons) state.announced[c.code] = now;
+  state.lastAnnounceAt = now;
+  saveState(state);
+
+  logger.info(
+    { novos: newOnes.map((c) => c.code), enviados: ok.length, total: groups.length },
+    '[anúncio-cupom] Cupons novos anunciados.'
+  );
+  return { newCodes: newOnes.map((c) => c.code), text, groups, posted: ok.length, dry: false };
+}

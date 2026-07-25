@@ -18,6 +18,7 @@
     "post-coupon": "tsx src/cli/post-coupon.ts",
     "discover-coupons": "tsx src/cli/discover-coupons.ts",
     "public-coupons": "tsx src/cli/public-coupons.ts",
+    "announce-coupons": "tsx src/cli/announce-coupons.ts",
     "post-perfume-coupon": "tsx src/cli/post-perfume-coupon.ts",
     "coupon-probe": "tsx src/cli/coupon-probe.ts",
     "ml-link": "tsx src/cli/ml-link.ts"

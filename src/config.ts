@@ -57,6 +57,12 @@ export interface Config {
     postIntervalMinutes: number;
     // Teto de páginas por varredura de descoberta (~507 = pool inteiro).
     maxPages: number;
+    // Anunciar automaticamente ("CUPOM LIBERADO") quando surgir código novo.
+    announceAuto: boolean;
+    // De quanto em quanto tempo checar se há código novo (min).
+    announceCheckMinutes: number;
+    // Intervalo MÍNIMO entre dois anúncios (horas) — @all é sensível a spam.
+    announceMinGapHours: number;
   };
   filter: {
     // Só postar perfume que a gente casa no banco (Fragrantica) OU que está fichado.
@@ -153,6 +159,9 @@ export const config: Config = {
     discoveryIntervalHours: num(process.env.COUPON_DISCOVERY_INTERVAL_HOURS, 8),
     postIntervalMinutes: num(process.env.COUPON_POST_INTERVAL_MINUTES, 90),
     maxPages: num(process.env.COUPON_MAX_PAGES, 600),
+    announceAuto: bool(process.env.COUPON_ANNOUNCE_AUTO, true),
+    announceCheckMinutes: num(process.env.COUPON_ANNOUNCE_CHECK_MINUTES, 60),
+    announceMinGapHours: num(process.env.COUPON_ANNOUNCE_MIN_GAP_HOURS, 12),
   },
   filter: {
     onlyKnownPerfumes: bool(process.env.ONLY_KNOWN_PERFUMES, true),
