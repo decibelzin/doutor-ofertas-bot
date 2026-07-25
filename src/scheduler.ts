@@ -12,6 +12,7 @@ import { setAlertSink, alertAuthDegraded } from './core/health';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
+import { runPublicCouponPost } from './core/public-coupon-runner';
 import { sleep, randomDelay } from './util/time';
 import type { Deal } from './core/deal';
 
@@ -163,6 +164,8 @@ function scheduleNiche(niche: Niche, opts: { immediate?: boolean } = {}): void {
 // ---------------------------------------------------------------------------
 
 let discovering = false;
+/** Alterna cupom público ↔ cupom de vendedor entre os slots de cupom. */
+let couponTurn = 0;
 
 /** Roda UMA descoberta de cupom (atualiza o cache). Não sobrepõe execuções. */
 async function runDiscoveryOnce(): Promise<void> {
@@ -199,13 +202,38 @@ async function postCouponTick(): Promise<void> {
   }
   if (capReached()) return;
   const sock = await whenReady();
-  const r = await runCouponPost(sock, {});
-  if (r) {
-    logger.info(
-      { cupom: r.coupon.couponId, produto: r.deal.title, grupos: r.posted },
-      '[Scheduler] Perfume+cupom postado.'
-    );
-  }
+
+  // Alterna as duas famílias de cupom pra variar o conteúdo do canal:
+  //  - PÚBLICO do ML (o cliente ativa; é o "cupom relâmpago" dos concorrentes);
+  //  - do VENDEDOR (auto-aplicado no carrinho).
+  // Tenta a preferida da vez; se não houver nada, cai na outra.
+  const publicFirst = couponTurn % 2 === 0;
+  couponTurn += 1;
+
+  const tryPublic = async (): Promise<boolean> => {
+    const r = await runPublicCouponPost(sock, {});
+    if (r) {
+      logger.info(
+        { cupom: r.coupon.title, produto: r.deal.title, grupos: r.posted },
+        '[Scheduler] Perfume + cupom PÚBLICO postado.'
+      );
+    }
+    return Boolean(r);
+  };
+  const trySeller = async (): Promise<boolean> => {
+    const r = await runCouponPost(sock, {});
+    if (r) {
+      logger.info(
+        { cupom: r.coupon.couponId, produto: r.deal.title, grupos: r.posted },
+        '[Scheduler] Perfume + cupom automático postado.'
+      );
+    }
+    return Boolean(r);
+  };
+
+  const first = publicFirst ? tryPublic : trySeller;
+  const second = publicFirst ? trySeller : tryPublic;
+  if (!(await first())) await second();
 }
 
 /** Loop de postagem de cupom (intervalo próprio + jitter). */

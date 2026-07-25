@@ -29,6 +29,8 @@ export interface PublicCouponItem {
 export interface PublicCoupon {
   campaignId: string;
   title: string;
+  /** IDs (MLB…) dos produtos elegíveis — vêm de um objeto irmão no mesmo HTML. */
+  itemIds: string[];
   /** Ex.: "Compra mínima R$ 150" (texto pronto do ML). */
   minAmountText: string | null;
   /** Ex.: "Limite de R$ 20". */
@@ -96,6 +98,16 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
     }
   }
 
+  // Os IDs dos produtos elegíveis vêm num objeto IRMÃO (mesmo campaign_id) que
+  // carrega `item_ids` — o card visual só traz imagem/alt_text/domain_id.
+  const idsByCampaign = new Map<string, string[]>();
+  for (const c of raw) {
+    const id = String(c.campaign_id ?? '');
+    if (id && Array.isArray(c.item_ids) && c.item_ids.length && !idsByCampaign.has(id)) {
+      idsByCampaign.set(id, (c.item_ids as unknown[]).map(String));
+    }
+  }
+
   const byCampaign = new Map<string, PublicCoupon>();
   for (const c of raw) {
     const items: PublicCouponItem[] = Array.isArray(c.items)
@@ -114,6 +126,7 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
 
     byCampaign.set(campaignId, {
       campaignId,
+      itemIds: idsByCampaign.get(campaignId) ?? [],
       title: asText(c.title) ?? '(sem título)',
       minAmountText: asText(amount.min_amount) ?? asText(c.min_amount),
       capAmountText: asText(amount.cap_amount) ?? asText(c.cap_amount),

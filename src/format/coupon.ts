@@ -142,5 +142,45 @@ export function formatPerfumeCoupon(
   return blocks.join('\n\n');
 }
 
+/**
+ * Legenda de PERFUME + CUPOM PÚBLICO do ML (o "cupom relâmpago" dos concorrentes).
+ * Diferente do cupom de vendedor (auto-aplicado), este o comprador ATIVA na
+ * página/app do ML — por isso a mensagem manda ativar, sem prometer preço final
+ * (o desconto depende da compra mínima e do teto do cupom).
+ */
+export function formatPublicCouponPost(
+  deal: Deal,
+  coupon: { title: string; minAmountText: string | null; capAmountText: string | null; expirationText: string | null },
+  opts: { variant?: number } = {}
+): string {
+  const variant = opts.variant ?? 0;
+  const preset = resolvePreset(deal.title, deal.id);
+  const name = preset?.nome ?? cleanTitle(deal.title);
+  const blocks: string[] = [];
+
+  blocks.push(`⚡ *CUPOM ${coupon.title.toUpperCase()}*`);
+
+  const accent = ACCENT[variant % ACCENT.length];
+  blocks.push(`${accent} *${name}*`);
+
+  const notas = preset?.notas?.length ? preset.notas : lookupNotas(deal.title);
+  if (notas && notas.length > 0) blocks.push(`🌿 Notas: ${notas.join(', ')}`);
+
+  if (deal.priceOriginal && deal.priceOriginal > deal.priceNow) {
+    const off = deal.discountPercent ? `  ·  *${Math.round(deal.discountPercent)}% OFF*` : '';
+    blocks.push(`~R$ ${price(deal.priceOriginal)}~ | *R$ ${price(deal.priceNow)}*${off}`);
+  } else {
+    blocks.push(`*R$ ${price(deal.priceNow)}*`);
+  }
+
+  // Condições reais do cupom (texto pronto do ML) + como usar.
+  const cond = [coupon.minAmountText, coupon.capAmountText].filter(Boolean).join(' · ');
+  blocks.push(`🎟️ *Cupom ${coupon.title}* — ative no app/site do ML antes de finalizar${cond ? `\n_${cond}_` : ''}`);
+  if (coupon.expirationText) blocks.push(`⏳ _${coupon.expirationText}_`);
+
+  blocks.push(`🛒 ${deal.affiliateUrl}`);
+  return blocks.join('\n\n');
+}
+
 // Reexport pra quem formata valores soltos (mantém formatMoney num lugar só).
 export { formatMoney };
