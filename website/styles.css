@@ -1,0 +1,198 @@
+/* ============================================================================
+   Doutor Ofertas — landing page
+   Paleta: quase-preto + dourado (perfumaria premium) + verde WhatsApp no CTA.
+   Para re-skinar, mexa só nas variáveis abaixo.
+   ========================================================================= */
+:root {
+  --bg: #0b0d10;
+  --bg-glow: #16110a;
+  --surface: #14171c;
+  --surface-2: #191d24;
+  --line: #23282f;
+
+  --gold: #d9b45b;
+  --gold-soft: #f0d493;
+  --green: #25d366;
+  --green-dark: #1eb457;
+
+  --text: #f4f5f7;
+  --muted: #969ca6;
+
+  --radius: 16px;
+  --maxw: 640px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background:
+    radial-gradient(1000px 480px at 50% -8%, var(--bg-glow), transparent 70%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding: 40px 20px 56px;
+}
+
+.wrap { max-width: var(--maxw); margin: 0 auto; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { text-align: center; }
+
+.logo {
+  width: 112px; height: 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 0 6px rgba(217, 180, 91, .08), 0 18px 50px rgba(0, 0, 0, .55);
+  background: var(--surface);
+}
+
+.brand {
+  margin-top: 18px;
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+
+.verified { width: 22px; height: 22px; color: var(--gold); flex: none; }
+
+.tagline {
+  margin-top: 6px;
+  font-size: clamp(1.05rem, 3.6vw, 1.2rem);
+  font-weight: 600;
+  color: var(--gold-soft);
+}
+.tagline em { font-style: italic; color: var(--gold); }
+
+.sub {
+  margin: 14px auto 0;
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: .98rem;
+}
+
+/* CTA */
+.cta {
+  margin-top: 26px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; max-width: 22rem;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, var(--green), var(--green-dark));
+  color: #06210f;
+  font-size: 1.05rem; font-weight: 800;
+  text-decoration: none;
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(37, 211, 102, .28);
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.cta:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(37, 211, 102, .38); }
+.cta:active { transform: translateY(0); filter: brightness(.95); }
+
+.cta-note { margin-top: 10px; font-size: .82rem; color: var(--muted); }
+
+/* ── Seções ───────────────────────────────────────────────────────────── */
+.section { margin-top: 52px; }
+
+.section-title {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.section-title::before,
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+/* Como funciona */
+.steps { list-style: none; display: grid; gap: 12px; }
+@media (min-width: 620px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+
+.step {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 18px;
+  text-align: center;
+}
+.step-num {
+  display: block;
+  font-size: .72rem; font-weight: 800; letter-spacing: .12em;
+  color: var(--gold); opacity: .85; margin-bottom: 10px;
+}
+.step h3 { font-size: 1.02rem; font-weight: 700; margin-bottom: 6px; }
+.step p { font-size: .88rem; color: var(--muted); }
+
+/* Grupos */
+.groups { display: grid; gap: 12px; }
+
+.group {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius);
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.group.is-active { border-left-color: var(--green); }
+.group.is-active:hover { background: var(--surface-2); transform: translateX(3px); }
+.group.is-soon { opacity: .5; }
+
+.group-icon {
+  flex: none;
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  font-size: 1.35rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.group-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.group-name { font-weight: 700; font-size: 1rem; }
+.group-desc { font-size: .84rem; color: var(--muted); }
+
+.group-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+.badge {
+  font-size: .68rem; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+}
+.badge-live { color: var(--green); background: rgba(37, 211, 102, .12); border: 1px solid rgba(37, 211, 102, .3); }
+.badge-soon { color: var(--muted); background: rgba(150, 156, 166, .1); border: 1px solid var(--line); }
+
+.group-go { font-size: .84rem; font-weight: 700; color: var(--gold); white-space: nowrap; }
+
+/* ── Transparência / rodapé ───────────────────────────────────────────── */
+.disclaimer {
+  margin-top: 52px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  text-align: center;
+}
+.disclaimer p + p { margin-top: 8px; }
+.disclaimer strong { color: var(--gold-soft); }
+.disclaimer p:last-child { font-size: .86rem; color: var(--muted); }
+
+.footer { margin-top: 28px; text-align: center; font-size: .8rem; color: var(--muted); }
+
+/* Acessibilidade: respeita quem prefere menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

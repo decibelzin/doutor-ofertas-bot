@@ -21,7 +21,8 @@
     "announce-coupons": "tsx src/cli/announce-coupons.ts",
     "post-perfume-coupon": "tsx src/cli/post-perfume-coupon.ts",
     "coupon-probe": "tsx src/cli/coupon-probe.ts",
-    "ml-link": "tsx src/cli/ml-link.ts"
+    "ml-link": "tsx src/cli/ml-link.ts",
+    "group-links": "tsx src/cli/group-links.ts"
   },
   "engines": {
     "node": ">=20"
