@@ -98,9 +98,14 @@ export interface PerfumeCoupon {
 // Classificação de perfumaria
 // ---------------------------------------------------------------------------
 
-/** Palavras que denunciam produto de perfumaria no título. */
+/**
+ * Palavras que denunciam produto de perfumaria no título.
+ * ⚠️ Os termos abertos são PREFIXOS (perfum→perfume/perfumes/perfumaria), então
+ * levam `\b` só à ESQUERDA. Um `\b` à direita quebraria o match ("perfum" seguido
+ * de "e" não é limite de palavra) — foi um bug real que rejeitava "Perfume ...".
+ */
 const PERFUME_KEYWORD =
-  /\b(perfum|parfum|eau de|\bedt\b|\bedp\b|col[oô]nia|fragr[aâ]ncia|body spray|deo[\s-]?col)\b/i;
+  /(\bperfum|\bparfum|\beau de\b|\bedt\b|\bedp\b|\bcol[oô]nia|\bfragr[aâ]ncia|\bbody spray\b|\bdeo[\s-]?col)/i;
 
 /**
  * Categorias que NÃO são perfume mas casam marca/banco de perfumaria (ex.: o
@@ -108,7 +113,14 @@ const PERFUME_KEYWORD =
  * mesma marca entraria na fila de post rotulada como perfume (ver handoff).
  */
 const NON_PERFUME_KW =
-  /\b(batom|gloss|corretivo|r[ií]mel|m[aá]scara de c[ií]lios|delineador|sombra|blush|p[oó] compacto|p[oó] facial|base l[ií]quida|esmalte|shampoo|condicionador|sabonete|hidratante|body splash|creme|s[eé]rum|escova|pincel|kit maquiagem|maquiagem)\b/i;
+  /\b(batom|gloss|corretivo|r[ií]mel|m[aá]scara de c[ií]lios|delineador|sombra|blush|p[oó] compacto|p[oó] facial|base l[ií]quida|esmalte|shampoo|condicionador|sabonete|hidratante|creme|s[eé]rum|escova|pincel|kit maquiagem|maquiagem|difusor|aromatizador|vela perfumada|amaciante|desinfetante|detergente|bolsa|bolsas|mochila|carteira|pochete|necessaire|shoulder bag|tiracolo|mala|rel[oó]gio|[oó]culos|camiseta|camisa|blusa|cal[cç]a|bermuda|short|vestido|jaqueta|t[eê]nis|sapato|chinelo|sand[aá]lia|bon[eé]|cinto|meia|cueca|toalha)\b/i;
+
+/**
+ * Volume (ml/L) no título. Perfume é vendido POR VOLUME — praticamente todo
+ * anúncio traz "100ml", "50 ml" etc. Usamos isso como corroboração quando o
+ * único sinal é a MARCA (que também vende bolsa, relógio, roupa…).
+ */
+const HAS_VOLUME = /\b\d{1,4}\s?(ml|mls|l|litros?)\b/i;
 
 /**
  * Marcas/casas de perfume (inclui ÁRABES — decisão do usuário: incluir mesmo
@@ -149,17 +161,22 @@ export function sellerLooksPerfumery(seller: string): boolean {
 
 /**
  * O TÍTULO do produto é de perfume?
- *  1. keyword explícita de perfume (perfume/edp/edt/…) → sim (ganha de tudo);
- *  2. keyword de maquiagem/cabelo/pele (batom/shampoo/…) → NÃO (corta o falso-positivo
- *     de marca, ex.: "Batom Eudora" que casa a marca Eudora);
- *  3. senão, casa no banco Fragrantica OU marca de perfume conhecida.
+ *  1. keyword de OUTRA categoria (batom/bolsa/difusor/relógio/roupa…) → NÃO.
+ *     Veta PRIMEIRO, mesmo com palavra de perfumaria no título: "Difusor de
+ *     Ambiente Fragrância" tem "fragrância" mas não é perfume;
+ *  2. keyword explícita de perfume (perfume/edp/edt/…) → sim;
+ *  3. casa no banco Fragrantica → sim;
+ *  4. só a MARCA bate → exige VOLUME (ml) como corroboração. Marca sozinha é
+ *     sinal fraco: casa de perfume também vende bolsa, relógio e roupa — foi
+ *     assim que uma "Shoulder Bag Maktub" foi postada como perfume.
  */
 export function isPerfumeProduct(title: string): boolean {
-  if (PERFUME_KEYWORD.test(title)) return true;
   if (NON_PERFUME_KW.test(title)) return false;
+  if (PERFUME_KEYWORD.test(title)) return true;
   if (isInBank(title)) return true;
   const n = norm(title);
-  return PERFUME_BRANDS.some((b) => brandPresent(n, b));
+  const brandHit = PERFUME_BRANDS.some((b) => brandPresent(n, b));
+  return brandHit && HAS_VOLUME.test(title);
 }
 
 /** Extrai % ou R$ do título do cupom ("20% OFF" / "R$ 15 OFF"). */
