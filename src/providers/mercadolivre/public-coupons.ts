@@ -39,6 +39,12 @@ export interface PublicCoupon {
   expirationText: string | null;
   /** EU_QUERO = o comprador ativa o cupom na página/app. */
   activationType: string | null;
+  /**
+   * Link direto pro cupom na página do ML (abre já apontando pra ele). Esses
+   * cupons NÃO têm código digitável — são de ativar por clique ("Aplicar"), e o
+   * `code` é um token opaco. Este link é o equivalente ao "código" pro cliente.
+   */
+  activationUrl: string | null;
   /** Produtos de perfumaria elegíveis (amostra que o ML mostra no card). */
   perfumeItems: PublicCouponItem[];
   /** Todos os produtos-amostra do card. */
@@ -132,6 +138,10 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
       capAmountText: asText(amount.cap_amount) ?? asText(c.cap_amount),
       expirationText: asText(c.expiration_date),
       activationType: typeof c.activation_type === 'string' ? c.activation_type : null,
+      activationUrl:
+        typeof c.code === 'string' && c.code.length > 0
+          ? `${URL}?code=${encodeURIComponent(c.code)}`
+          : null,
       perfumeItems,
       items,
     });

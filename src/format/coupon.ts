@@ -150,7 +150,13 @@ export function formatPerfumeCoupon(
  */
 export function formatPublicCouponPost(
   deal: Deal,
-  coupon: { title: string; minAmountText: string | null; capAmountText: string | null; expirationText: string | null },
+  coupon: {
+    title: string;
+    minAmountText: string | null;
+    capAmountText: string | null;
+    expirationText: string | null;
+    activationUrl?: string | null;
+  },
   opts: { variant?: number } = {}
 ): string {
   const variant = opts.variant ?? 0;
@@ -173,12 +179,19 @@ export function formatPublicCouponPost(
     blocks.push(`*R$ ${price(deal.priceNow)}*`);
   }
 
-  // Condições reais do cupom (texto pronto do ML) + como usar.
+  // Condições reais do cupom (texto pronto do ML) + como ativar. Esses cupons
+  // não têm código digitável (são de clicar em "Aplicar"), então mandamos o
+  // LINK do cupom — é o equivalente do "código" pro cliente.
   const cond = [coupon.minAmountText, coupon.capAmountText].filter(Boolean).join(' · ');
-  blocks.push(`🎟️ *Cupom ${coupon.title}* — ative no app/site do ML antes de finalizar${cond ? `\n_${cond}_` : ''}`);
+  blocks.push(`🎟️ *Cupom ${coupon.title}*${cond ? `\n_${cond}_` : ''}`);
+  if (coupon.activationUrl) {
+    blocks.push(`👉 *Ative o cupom aqui (1 clique):*\n${coupon.activationUrl}`);
+  } else {
+    blocks.push('👉 Ative o cupom no app/site do ML antes de finalizar a compra.');
+  }
   if (coupon.expirationText) blocks.push(`⏳ _${coupon.expirationText}_`);
 
-  blocks.push(`🛒 ${deal.affiliateUrl}`);
+  blocks.push(`🛒 *Compre aqui:*\n${deal.affiliateUrl}`);
   return blocks.join('\n\n');
 }
 
