@@ -9,7 +9,9 @@
  * No bot rodando (`npm run start`) isso já acontece SOZINHO quando surge um
  * código novo — este comando é pra testar ou forçar na mão.
  */
+import fs from 'node:fs';
 import { logger } from '../logger';
+import { config } from '../config';
 import { connectWhatsApp, whenReady } from '../whatsapp/client';
 import { announceNewCoupons } from '../core/coupon-announcer';
 
@@ -27,6 +29,15 @@ async function main(): Promise<void> {
     console.log('----- PREVIEW (não enviado) -----');
     console.log(`códigos novos: ${r.newCodes.join(', ') || '(nenhum novo — todos já anunciados)'}`);
     console.log(`grupos-alvo: ${r.groups.length}`);
+    // Banner: confirma se a imagem vai junto (o anúncio fica bem melhor com ela).
+    const bp = config.coupon.bannerPath;
+    if (!bp) {
+      console.log('banner: (COUPON_BANNER_PATH não configurado — sai só texto)');
+    } else if (fs.existsSync(bp)) {
+      console.log(`banner: ✅ ${bp} (${Math.round(fs.statSync(bp).size / 1024)} KB)`);
+    } else {
+      console.log(`banner: ❌ NÃO encontrado em ${bp} — salve a imagem aí pra sair com foto`);
+    }
     console.log('---------------------------------');
     console.log(r.text);
     console.log('---------------------------------');

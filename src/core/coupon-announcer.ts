@@ -143,8 +143,12 @@ export async function announceNewCoupons(
   const bannerPath = config.coupon.bannerPath;
   if (bannerPath && fs.existsSync(bannerPath)) {
     banner = fs.readFileSync(bannerPath);
+    logger.info({ bannerPath, kb: Math.round(banner.length / 1024) }, '[anúncio-cupom] Banner carregado.');
   } else if (bannerPath) {
-    logger.warn({ bannerPath }, '[anúncio-cupom] Banner não encontrado — enviando só texto.');
+    logger.warn(
+      { bannerPath },
+      '[anúncio-cupom] Banner NÃO encontrado nesse caminho — vai sair só texto. Salve a imagem lá.'
+    );
   }
 
   const ok = await broadcastCoupon(sock, groups, text, banner);
