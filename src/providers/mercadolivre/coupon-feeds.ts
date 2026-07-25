@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import type { AnyNode } from 'domhandler';
 import { logger } from '../../logger';
 
 /**
@@ -32,24 +33,49 @@ export interface FeedCoupon {
   minPurchase: number | null;
   /** Teto de desconto em R$ (ou null). */
   capAmount: number | null;
-  source: string;
+  /** Agregadores onde o código foi visto. 2+ = confiança alta. */
+  sources: string[];
 }
 
 interface Feed {
   name: string;
   url: string;
-  /** Seletor dos elementos que carregam o código. */
-  codeSelector: string;
-  /** Como extrair o código do elemento. */
+  /** 'selector' = código num atributo; 'table' = linha REGRA | CUPOM. */
+  mode: 'selector' | 'table';
+  /** Seletor dos elementos que carregam o código (modo selector). */
+  codeSelector?: string;
+  /** Atributo de onde tirar o código (modo selector). */
   codeAttr?: string;
+  /**
+   * Alguns sites publicam a lista numa página DATADA (muda todo dia). Quando
+   * presente, buscamos `url` (um índice) e seguimos o link mais recente que
+   * casa este padrão.
+   */
+  discoverLink?: RegExp;
 }
 
 const FEEDS: Feed[] = [
   {
     name: 'pelando',
     url: 'https://www.pelando.com.br/cupons-de-descontos/mercado-livre',
+    mode: 'selector',
     codeSelector: '[data-copy-code]',
     codeAttr: 'data-copy-code',
+  },
+  {
+    name: 'descontostop',
+    url: 'https://descontostop.com/loja/cupom-desconto-mercado-livre/',
+    mode: 'selector',
+    codeSelector: '[data-code]',
+    codeAttr: 'data-code',
+  },
+  {
+    // Publica numa página DATADA (muda todo dia): descobrimos o link mais
+    // recente pela home. Conteúdo em TABELA (REGRA | CUPOM | LINK).
+    name: 'melhorescartoes',
+    url: 'https://www.melhorescartoes.com.br/',
+    mode: 'table',
+    discoverLink: /cupons?-mercado-livre[a-z0-9-]*\.html$/i,
   },
 ];
 
@@ -63,7 +89,9 @@ function toNum(s: string | undefined): number | null {
 }
 
 /** Extrai desconto, compra mínima e teto da descrição do agregador. */
-export function parseFeedDescription(desc: string): Omit<FeedCoupon, 'code' | 'source' | 'description'> {
+export function parseFeedDescription(
+  desc: string
+): Pick<FeedCoupon, 'percentOff' | 'amountOff' | 'minPurchase' | 'capAmount'> {
   const pct = desc.match(/(\d{1,2})\s*%\s*off/i);
   const amt = desc.match(/R?\$?\s*(\d{1,4}(?:[.,]\d{2})?)\s*off/i);
   const min = desc.match(/acima\s+(?:de\s+)?R?\$?\s*(\d{1,5}(?:[.,]\d{2})?)/i);
@@ -76,36 +104,116 @@ export function parseFeedDescription(desc: string): Omit<FeedCoupon, 'code' | 's
   };
 }
 
-async function fetchFeed(feed: Feed): Promise<FeedCoupon[]> {
-  const res = await axios.get<string>(feed.url, {
+/**
+ * Acha a descrição do cupom subindo a árvore a partir do elemento do código.
+ * Os agregadores variam muito de markup (às vezes o código está DENTRO do
+ * título), então subimos até achar um texto que pareça regra de cupom do ML.
+ */
+function findDescription($: cheerio.CheerioAPI, el: AnyNode): string | null {
+  const looksLikeRule = (t: string): boolean =>
+    /mercado\s*livre|meli/i.test(t) && /%|R\$/i.test(t) && t.length < 220;
+
+  let node = $(el);
+  for (let up = 0; up < 5; up += 1) {
+    // Texto de títulos/descrições dentro do container atual.
+    const cand = node
+      .find('h2,h3,h4,p,[class*="title"],[class*="desc"]')
+      .map((_, e) => $(e).text().trim().replace(/\s+/g, ' '))
+      .get()
+      .find(looksLikeRule);
+    if (cand) return cand;
+    // Ou o próprio texto do nó (caso o código esteja dentro do título).
+    const own = node.text().trim().replace(/\s+/g, ' ');
+    if (looksLikeRule(own)) return own;
+    const parent = node.parent();
+    if (parent.length === 0) break;
+    node = parent;
+  }
+  return null;
+}
+
+/** Código plausível de cupom (e não um token/hash). */
+function isPlausibleCode(code: string, feedName: string): boolean {
+  if (!/^[A-Z0-9]{4,24}$/.test(code)) return false;
+  // Cupom do PRÓPRIO agregador (ex.: PELANDO250) não é do ML.
+  if (code.includes(feedName.toUpperCase())) return false;
+  // Precisa ter letra (hash puro numérico não é código de campanha).
+  return /[A-Z]/.test(code);
+}
+
+async function getHtml(url: string): Promise<string | null> {
+  const res = await axios.get<string>(url, {
     headers: { 'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9' },
     timeout: 25000,
     responseType: 'text',
     validateStatus: () => true,
     maxRedirects: 5,
   });
-  if (res.status !== 200) {
-    logger.warn({ feed: feed.name, status: res.status }, '[ML/feeds] Agregador não respondeu 200.');
+  return res.status === 200 ? res.data : null;
+}
+
+async function fetchFeed(feed: Feed): Promise<Omit<FeedCoupon, 'sources'>[]> {
+  let html = await getHtml(feed.url);
+  if (!html) {
+    logger.warn({ feed: feed.name }, '[ML/feeds] Agregador não respondeu 200.');
     return [];
   }
 
-  const $ = cheerio.load(res.data);
-  const out: FeedCoupon[] = [];
+  // Página datada: segue o link mais recente do índice.
+  if (feed.discoverLink) {
+    const idx = cheerio.load(html);
+    const links = [
+      ...new Set(
+        idx('a[href]')
+          .map((_, a) => idx(a).attr('href') ?? '')
+          .get()
+          .filter((h) => feed.discoverLink!.test(h))
+      ),
+    ];
+    if (links.length === 0) {
+      logger.warn({ feed: feed.name }, '[ML/feeds] Não achei a página datada de cupons.');
+      return [];
+    }
+    const target = new URL(links[0]!, feed.url).toString();
+    html = await getHtml(target);
+    if (!html) return [];
+    logger.debug({ feed: feed.name, target }, '[ML/feeds] Página datada resolvida.');
+  }
+
+  const $ = cheerio.load(html);
+  const out: Omit<FeedCoupon, 'sources'>[] = [];
   const seen = new Set<string>();
 
-  $(feed.codeSelector).each((_, el) => {
-    const code = (feed.codeAttr ? $(el).attr(feed.codeAttr) : $(el).text())?.trim().toUpperCase();
-    // Código plausível: 4–24 chars, alfanumérico, sem espaço.
-    if (!code || !/^[A-Z0-9]{4,24}$/.test(code) || seen.has(code)) return;
-    // Cupom do PRÓPRIO agregador (ex.: PELANDO250) não é do ML — descarta.
-    if (code.includes(feed.name.toUpperCase())) return;
-    seen.add(code);
+  if (feed.mode === 'table') {
+    // Linha tipo: "20% OFF – limitado a R$100 – acima de R$29 | MELIOFFHJ | aqui"
+    $('tr').each((_, tr) => {
+      const cells = $(tr)
+        .find('td')
+        .map((__, td) => $(td).text().trim().replace(/\s+/g, ' '))
+        .get();
+      if (cells.length < 2) return;
+      const codeCell = cells.find((c) => /^[A-Z0-9]{4,24}$/.test(c));
+      if (!codeCell) return;
+      const code = codeCell.toUpperCase();
+      if (!isPlausibleCode(code, feed.name) || seen.has(code)) return;
+      // A descrição é a célula mais longa (a "REGRA").
+      const description = cells.filter((c) => c !== codeCell).sort((a, b) => b.length - a.length)[0] ?? '';
+      if (!/%|R\$/i.test(description)) return; // sem regra reconhecível, pula
+      seen.add(code);
+      out.push({ code, description, ...parseFeedDescription(description) });
+    });
+    return out;
+  }
 
-    const card = $(el).closest('article, .card, [class*="deal-card"], li');
-    const description = card.find('h2,h3,[class*="title"]').first().text().trim();
+  $(feed.codeSelector ?? '').each((_, el) => {
+    const code = (feed.codeAttr ? $(el).attr(feed.codeAttr) : $(el).text())?.trim().toUpperCase();
+    if (!code || !isPlausibleCode(code, feed.name) || seen.has(code)) return;
+
+    const description = findDescription($, el);
     // Sem descrição de cupom do ML reconhecível, não dá pra anunciar com segurança.
-    if (!/mercado\s*livre|meli/i.test(description)) return;
-    out.push({ code, description, source: feed.name, ...parseFeedDescription(description) });
+    if (!description) return;
+    seen.add(code);
+    out.push({ code, description, ...parseFeedDescription(description) });
   });
   return out;
 }
@@ -119,32 +227,66 @@ export async function fetchFeedCoupons({
 }: { ttlMs?: number } = {}): Promise<FeedCoupon[]> {
   if (cache.at && Date.now() - cache.at < ttlMs) return cache.coupons;
 
-  const all: FeedCoupon[] = [];
+  // VALIDAÇÃO CRUZADA: o mesmo código visto em N agregadores é muito mais
+  // provável de estar válido (um site sozinho erra/atrasa). Guardamos em quantas
+  // fontes cada código apareceu pra priorizar os confirmados.
+  const byCode = new Map<string, FeedCoupon>();
+  let feedsOk = 0;
+
   for (const feed of FEEDS) {
+    let items: Omit<FeedCoupon, 'sources'>[] = [];
     try {
-      all.push(...(await fetchFeed(feed)));
+      items = await fetchFeed(feed);
+      if (items.length > 0) feedsOk += 1;
     } catch (err) {
       logger.warn({ feed: feed.name, err: (err as Error).message }, '[ML/feeds] Falha no agregador.');
+      continue;
+    }
+    for (const it of items) {
+      const prev = byCode.get(it.code);
+      if (prev) {
+        if (!prev.sources.includes(feed.name)) prev.sources.push(feed.name);
+        // Completa campos que a outra fonte não trouxe.
+        prev.minPurchase ??= it.minPurchase;
+        prev.capAmount ??= it.capAmount;
+        prev.percentOff ??= it.percentOff;
+        prev.amountOff ??= it.amountOff;
+      } else {
+        byCode.set(it.code, { ...it, sources: [feed.name] });
+      }
     }
   }
 
-  // Dedup por código, mantendo a 1ª ocorrência (feed mais confiável primeiro).
-  const byCode = new Map<string, FeedCoupon>();
-  for (const c of all) if (!byCode.has(c.code)) byCode.set(c.code, c);
   const out = [...byCode.values()];
-
   if (out.length === 0 && cache.coupons.length > 0) return cache.coupons; // não zera cache bom
   cache.at = Date.now();
   cache.coupons = out;
-  logger.info({ count: out.length, codigos: out.slice(0, 8).map((c) => c.code) }, '[ML/feeds] Cupons de site inteiro.');
+
+  const confirmados = out.filter((c) => c.sources.length >= 2);
+  logger.info(
+    {
+      fontesOk: `${feedsOk}/${FEEDS.length}`,
+      total: out.length,
+      confirmados: confirmados.length,
+      topConfirmados: confirmados.slice(0, 6).map((c) => c.code),
+    },
+    '[ML/feeds] Cupons de site inteiro (validação cruzada).'
+  );
   return out;
 }
 
-/** Só os cupons "de site inteiro" mais fortes: maior desconto primeiro. */
+/**
+ * Ordena por CONFIANÇA e depois por valor: código visto em mais agregadores
+ * primeiro (menos risco de postar cupom morto), depois maior desconto.
+ */
 export function rankFeedCoupons(coupons: FeedCoupon[]): FeedCoupon[] {
-  return [...coupons].sort((a, b) => {
-    const va = a.amountOff ?? (a.percentOff ?? 0) * 2; // aproxima % vs R$ pra ordenar
-    const vb = b.amountOff ?? (b.percentOff ?? 0) * 2;
-    return vb - va;
-  });
+  const value = (c: FeedCoupon): number => c.amountOff ?? (c.percentOff ?? 0) * 2;
+  return [...coupons].sort(
+    (a, b) => b.sources.length - a.sources.length || value(b) - value(a)
+  );
+}
+
+/** Só os cupons confirmados por 2+ agregadores (os mais seguros de postar). */
+export function confirmedFeedCoupons(coupons: FeedCoupon[]): FeedCoupon[] {
+  return rankFeedCoupons(coupons.filter((c) => c.sources.length >= 2));
 }

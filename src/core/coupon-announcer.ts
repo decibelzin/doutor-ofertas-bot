@@ -7,7 +7,7 @@ import { loadNiches } from './niches';
 import { broadcastCoupon } from '../whatsapp/sender';
 import { writeFileAtomic } from '../util/atomic';
 import { fetchSpecialCoupons, type SpecialCoupon } from '../providers/mercadolivre/public-coupons';
-import { fetchFeedCoupons, rankFeedCoupons, type FeedCoupon } from '../providers/mercadolivre/coupon-feeds';
+import { fetchFeedCoupons, rankFeedCoupons, confirmedFeedCoupons, type FeedCoupon } from '../providers/mercadolivre/coupon-feeds';
 
 /**
  * ANÚNCIO AUTOMÁTICO DE CUPONS NOVOS ("CUPOM LIBERADO"): quando aparecem
@@ -93,7 +93,15 @@ export async function announceNewCoupons(
   const coupons = await fetchSpecialCoupons();
   // Cupons de SITE INTEIRO dos agregadores (ALLSITE25, TODOSITE25...) — os mais
   // fortes e os que os concorrentes postam. Top N pra mensagem não virar lista.
-  const feed = rankFeedCoupons(await fetchFeedCoupons()).slice(0, config.coupon.announceMaxFeedCoupons);
+  // Prioriza os CONFIRMADOS por 2+ agregadores (menor risco de código morto);
+  // se não houver confirmados suficientes, completa com os melhores restantes.
+  const allFeed = await fetchFeedCoupons();
+  const max = config.coupon.announceMaxFeedCoupons;
+  const confirmed = confirmedFeedCoupons(allFeed);
+  const feed =
+    confirmed.length >= max
+      ? confirmed.slice(0, max)
+      : [...confirmed, ...rankFeedCoupons(allFeed).filter((c) => !confirmed.includes(c))].slice(0, max);
   if (coupons.length === 0 && feed.length === 0) return null;
 
   const state = loadState();
