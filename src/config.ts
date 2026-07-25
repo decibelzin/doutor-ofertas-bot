@@ -104,6 +104,8 @@ export interface Config {
     searchPagesPerTerm: number;
     // TTL do cache da busca pública (min) — raspa 1x por esse período, não a cada post.
     searchTtlMinutes: number;
+    // TTL do cache dos CUPONS PÚBLICOS do ML (mercadolivre.com.br/cupons), em min.
+    publicCouponsTtlMinutes: number;
     // Link de afiliado: 'matt' anexa matt_word/matt_tool; 'simple' usa uma tag única.
     linkMode: 'matt' | 'simple';
     mattWord: string;
@@ -195,6 +197,7 @@ export const config: Config = {
     hubPagesPerTerm: num(process.env.ML_HUB_PAGES_PER_TERM, 2),
     searchPagesPerTerm: num(process.env.ML_SEARCH_PAGES_PER_TERM, 2),
     searchTtlMinutes: num(process.env.ML_SEARCH_TTL_MINUTES, 25),
+    publicCouponsTtlMinutes: num(process.env.ML_PUBLIC_COUPONS_TTL_MINUTES, 60),
     linkMode: (process.env.ML_LINK_MODE ?? 'matt').toLowerCase() === 'simple' ? 'simple' : 'matt',
     mattWord: process.env.ML_MATT_WORD ?? '',
     mattTool: process.env.ML_MATT_TOOL ?? '',
