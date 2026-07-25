@@ -63,6 +63,8 @@ export interface Config {
     announceCheckMinutes: number;
     // Intervalo MÍNIMO entre dois anúncios (horas) — @all é sensível a spam.
     announceMinGapHours: number;
+    // Quantos cupons de site inteiro (agregador) entram na mensagem.
+    announceMaxFeedCoupons: number;
   };
   filter: {
     // Só postar perfume que a gente casa no banco (Fragrantica) OU que está fichado.
@@ -162,6 +164,7 @@ export const config: Config = {
     announceAuto: bool(process.env.COUPON_ANNOUNCE_AUTO, true),
     announceCheckMinutes: num(process.env.COUPON_ANNOUNCE_CHECK_MINUTES, 60),
     announceMinGapHours: num(process.env.COUPON_ANNOUNCE_MIN_GAP_HOURS, 12),
+    announceMaxFeedCoupons: num(process.env.COUPON_ANNOUNCE_MAX_FEED, 4),
   },
   filter: {
     onlyKnownPerfumes: bool(process.env.ONLY_KNOWN_PERFUMES, true),

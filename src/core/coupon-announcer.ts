@@ -7,6 +7,7 @@ import { loadNiches } from './niches';
 import { broadcastCoupon } from '../whatsapp/sender';
 import { writeFileAtomic } from '../util/atomic';
 import { fetchSpecialCoupons, type SpecialCoupon } from '../providers/mercadolivre/public-coupons';
+import { fetchFeedCoupons, rankFeedCoupons, type FeedCoupon } from '../providers/mercadolivre/coupon-feeds';
 
 /**
  * ANÚNCIO AUTOMÁTICO DE CUPONS NOVOS ("CUPOM LIBERADO"): quando aparecem
@@ -45,14 +46,24 @@ function allGroups(): string[] {
   return [...new Set(loadNiches().flatMap((n) => n.groups))];
 }
 
+/** Linha de um cupom do agregador: "🎟️ R$20 OFF acima de R$199: *ALLSITE25*". */
+function feedLine(c: FeedCoupon): string {
+  const val = c.percentOff !== null ? `${c.percentOff}% OFF` : c.amountOff !== null ? `R$${c.amountOff} OFF` : 'Desconto';
+  const min = c.minPurchase !== null ? ` em compras acima de R$${c.minPurchase}` : '';
+  return `🎟️ ${val}${min}: *${c.code}*`;
+}
+
 /** Monta a mensagem no formato "CUPOM LIBERADO" (multi-cupom). */
-export function formatCouponAnnouncement(coupons: SpecialCoupon[]): string {
+export function formatCouponAnnouncement(coupons: SpecialCoupon[], feed: FeedCoupon[] = []): string {
   const blocks: string[] = ['🚨 *NOVOS CUPONS MERCADO LIVRE!*', '*Usem nos perfumes enviados anteriormente* 🔥'];
 
-  const lines = coupons.map((c) => {
+  const lines: string[] = [];
+  // Cupons de site inteiro (agregador) primeiro — são os mais fortes.
+  for (const c of feed) lines.push(feedLine(c));
+  for (const c of coupons) {
     const cond = c.minAmountText ? ` ${c.minAmountText.toLowerCase()}` : '';
-    return `🎟️ ${c.title.trim()}${cond}: *${c.code}*`;
-  });
+    lines.push(`🎟️ ${c.title.trim()}${cond}: *${c.code}*`);
+  }
   blocks.push(lines.join('\n\n'));
 
   const exp = coupons.map((c) => c.expirationText).find(Boolean);
@@ -80,10 +91,16 @@ export async function announceNewCoupons(
   opts: { dry?: boolean; force?: boolean } = {}
 ): Promise<AnnounceResult | null> {
   const coupons = await fetchSpecialCoupons();
-  if (coupons.length === 0) return null;
+  // Cupons de SITE INTEIRO dos agregadores (ALLSITE25, TODOSITE25...) — os mais
+  // fortes e os que os concorrentes postam. Top N pra mensagem não virar lista.
+  const feed = rankFeedCoupons(await fetchFeedCoupons()).slice(0, config.coupon.announceMaxFeedCoupons);
+  if (coupons.length === 0 && feed.length === 0) return null;
 
   const state = loadState();
-  const newOnes = coupons.filter((c) => !state.announced[c.code]);
+  const newOnes = [
+    ...coupons.filter((c) => !state.announced[c.code]),
+    ...feed.filter((c) => !state.announced[c.code]).map((c) => ({ code: c.code }) as SpecialCoupon),
+  ];
   if (newOnes.length === 0 && !opts.force) {
     logger.debug('[anúncio-cupom] Nenhum código novo.');
     return null;
@@ -101,7 +118,7 @@ export async function announceNewCoupons(
   }
 
   // Anuncia TODOS os vigentes (não só os novos) — a mensagem é uma lista.
-  const text = formatCouponAnnouncement(coupons);
+  const text = formatCouponAnnouncement(coupons, feed);
   const groups = allGroups();
 
   if (opts.dry) {
@@ -126,6 +143,7 @@ export async function announceNewCoupons(
 
   const now = Date.now();
   for (const c of coupons) state.announced[c.code] = now;
+  for (const c of feed) state.announced[c.code] = now;
   state.lastAnnounceAt = now;
   saveState(state);
 
