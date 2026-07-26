@@ -1,7 +1,11 @@
 /* ============================================================================
-   Doutor Ofertas — landing (tela única, mobile-first)
+   Doutor Ofertas — landing (tela única, responsiva de 320px a ultrawide)
    Preto quase-puro + dourado metálico + verde WhatsApp no CTA.
    CSS puro de propósito: sem Tailwind CDN, a página pinta na hora no 4G.
+
+   Estratégia responsiva: tudo escala por clamp() em vez de saltar em
+   breakpoints. Só há media query para o que clamp() não resolve —
+   orientação paisagem e telas muito baixas.
    ========================================================================= */
 :root {
   --bg: #0a0a0b;
@@ -10,6 +14,9 @@
   --green: #25d366;
   --text: #e5e2e3;
   --muted: #9b8f7c;
+
+  /* Ritmo vertical: cresce com a ALTURA da tela (não com a largura) */
+  --rhythm: clamp(12px, 2.2vh, 26px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,66 +33,79 @@ body {
   justify-content: center;
 }
 
-/* Brilho dourado atrás do logo */
+/* Brilho dourado atrás do logo — escala junto com a tela */
 .glow {
   position: fixed;
   top: 6%; left: 50%;
-  width: 280px; height: 280px;
+  width: clamp(240px, 60vmin, 520px);
+  aspect-ratio: 1;
   transform: translateX(-50%);
   background: radial-gradient(circle, rgba(232, 184, 75, .15) 0%, rgba(10, 10, 11, 0) 70%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Tela: 3 blocos distribuídos + rodapé. Rola só se o aparelho for muito baixo. */
+/* Composição: 4 blocos com respiro igual entre si E nas bordas (space-evenly) */
 .screen {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 420px;
+  /* Acompanha a tela: coluna no celular, mais presença no desktop */
+  max-width: clamp(320px, 92vw, 560px);
   min-height: 100svh;
-  padding: 40px 32px calc(28px + env(safe-area-inset-bottom));
+  padding:
+    clamp(16px, 3vh, 40px)
+    clamp(20px, 6vw, 40px)
+    calc(clamp(16px, 3vh, 40px) + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  gap: 20px;
+  gap: var(--rhythm);
   text-align: center;
 }
 
 /* ── Marca ─────────────────────────────────────────────────────────────── */
-.top { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.top {
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(10px, 1.6vh, 18px);
+}
 
 .logo-ring {
-  width: 96px; height: 96px;
+  /* vmin faz o logo respeitar a MENOR dimensão — não estoura em paisagem */
+  width: clamp(64px, 22vmin, 128px);
+  aspect-ratio: 1;
   padding: 4px;
   border: 1px solid var(--gold);
   border-radius: 50%;
   box-shadow: 0 0 15px rgba(232, 184, 75, .2);
+  flex: none;
 }
 .logo { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 
 .brand {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: .4em;
+  font-size: clamp(11px, 1.6vw, 14px);
+  font-weight: 700;
   letter-spacing: .2em;
   color: var(--gold);
 }
-.verified { width: 14px; height: 14px; color: var(--gold); flex: none; }
+.verified { width: 1.2em; height: 1.2em; color: var(--gold); flex: none; }
 
 /* ── Chamada ───────────────────────────────────────────────────────────── */
-.middle { display: flex; flex-direction: column; gap: 14px; }
+.middle { display: flex; flex-direction: column; gap: clamp(10px, 1.5vh, 18px); }
 
 .headline {
   font-family: 'Anton', 'Inter', sans-serif;
   font-weight: 400;
-  /* Escala com a tela: nunca estoura no iPhone SE nem fica pequeno no Max. */
-  font-size: clamp(2.5rem, 12.5vw, 3.25rem);
+  /* Escala contínua: 320px → ~2.05rem; desktop → 4rem. Nunca estoura. */
+  font-size: clamp(2.05rem, 11vw, 4rem);
   line-height: 1;
   letter-spacing: -.01em;
   text-transform: uppercase;
+  text-wrap: balance;          /* evita linha órfã onde suportado */
 }
-/* Dourado metálico (com fallback sólido onde o clip não é suportado) */
+/* Dourado metálico (fallback sólido onde o clip não é suportado) */
 .gold {
   color: var(--gold);
   background: linear-gradient(45deg, var(--gold), var(--gold-deep));
@@ -95,18 +115,25 @@ body {
 }
 
 .support {
-  font-size: 12px; font-weight: 700;
+  font-size: clamp(11px, 1.5vw, 14px);
+  font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
+  text-wrap: balance;
 }
 
 /* ── Ação ──────────────────────────────────────────────────────────────── */
-.bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.bottom {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(8px, 1.2vh, 14px);
+}
 
 /* Escassez REAL (só aparece quando o bot informa poucas vagas) */
 .vagas {
-  font-size: 12px; font-weight: 700;
+  font-size: clamp(11px, 1.5vw, 14px);
+  font-weight: 700;
   letter-spacing: .12em;
   color: var(--gold);
 }
@@ -114,21 +141,27 @@ body {
 
 .cta {
   width: 100%;
-  height: 64px;
-  display: flex; align-items: center; justify-content: center; gap: 12px;
+  /* Nunca menor que um alvo de toque confortável, nunca gigante */
+  height: clamp(52px, 7.5vh, 68px);
+  display: flex; align-items: center; justify-content: center;
+  gap: .6em;
   background: var(--green);
   color: #fff;
-  font-size: 16px; font-weight: 700;
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 700;
   letter-spacing: .04em;
   text-decoration: none;
   border-radius: 999px;
   box-shadow: 0 4px 20px rgba(37, 211, 102, .3);
   transition: transform .2s ease, filter .2s ease;
 }
+.cta svg { width: 1.4em; height: 1.4em; flex: none; }
 .cta:active { transform: scale(.98); filter: brightness(1.1); }
+.cta:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
 .cta-note {
-  font-size: 10px; font-weight: 700;
+  font-size: clamp(9px, 1.2vw, 12px);
+  font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
@@ -137,20 +170,43 @@ body {
 
 /* ── Rodapé ────────────────────────────────────────────────────────────── */
 .foot p {
-  font-size: 10px; font-weight: 700;
+  font-size: clamp(9px, 1.2vw, 12px);
+  font-weight: 700;
   letter-spacing: .02em;
   text-transform: uppercase;
   line-height: 1.3;
   color: var(--gold);
   opacity: .5;
+  text-wrap: balance;
 }
 
-/* Telas curtas: aperta o respiro pra continuar cabendo sem rolar */
-@media (max-height: 700px) {
-  .screen { padding: 20px 28px calc(20px + env(safe-area-inset-bottom)); gap: 14px; }
-  .logo-ring { width: 76px; height: 76px; }
-  .headline { font-size: clamp(2.1rem, 10.5vw, 2.6rem); }
-  .cta { height: 56px; }
+/* ── PAISAGEM / telas muito baixas ─────────────────────────────────────────
+   Celular deitado (ex.: 812x375) não cabe em coluna. Vira 2 colunas: marca de
+   um lado, chamada e botão do outro — e permite rolar se ainda faltar espaço
+   (nunca prender o usuário sem ver o botão). */
+@media (max-height: 460px) and (orientation: landscape) {
+  body { min-height: auto; }
+  .screen {
+    max-width: min(96vw, 900px);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 4vw, 48px);
+    padding: 16px 24px;
+  }
+  .top { flex: 0 0 auto; }
+  .middle { flex: 1 1 300px; max-width: 460px; }
+  .bottom { flex: 1 1 240px; max-width: 340px; }
+  .headline { font-size: clamp(1.5rem, 4.4vw, 2.4rem); }
+  .foot { flex: 1 1 100%; }
+  .glow { top: -10%; }
+}
+
+/* Telas baixas em retrato (navegador com muita UI): aperta o ritmo */
+@media (max-height: 620px) and (orientation: portrait) {
+  :root { --rhythm: clamp(8px, 1.6vh, 16px); }
+  .headline { font-size: clamp(1.85rem, 9.5vw, 2.6rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
