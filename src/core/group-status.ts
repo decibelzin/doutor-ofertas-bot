@@ -3,6 +3,7 @@ import type { WASocket } from '@whiskeysockets/baileys';
 import { config } from '../config';
 import { logger } from '../logger';
 import { loadNiches } from './niches';
+import { loadLandings } from './landing';
 import { writeFileAtomic } from '../util/atomic';
 
 /**
@@ -45,12 +46,31 @@ export interface GroupsFile {
  */
 export async function buildGroupStatus(
   sock: WASocket,
-  { limit = config.site.groupLimit }: { limit?: number } = {}
+  { limit = config.site.groupLimit, niche }: { limit?: number; niche?: string } = {}
 ): Promise<GroupsFile> {
   const niches = loadNiches();
-  const perfume = niches.filter((n) => /perfum|fragr/i.test(n.name));
-  const target = (perfume.length ? perfume : niches).flatMap((n) => n.groups);
-  const groupIds = [...new Set(target)];
+
+  /**
+   * Com `niche`, usa SÓ os grupos daquele nicho. Isso é obrigatório desde que
+   * o site passou a ter uma página por nicho: sem o filtro, os grupos de todos
+   * os nichos caem numa lista só e o botão da página de perfume pode mandar a
+   * pessoa pro grupo de fitness.
+   *
+   * Sem `niche`, mantém o comportamento antigo (site de nicho único): perfume
+   * se existir, senão todos.
+   */
+  const escolhidos = niche
+    ? niches.filter((n) => n.name === niche)
+    : (() => {
+        const perfume = niches.filter((n) => /perfum|fragr/i.test(n.name));
+        return perfume.length ? perfume : niches;
+      })();
+
+  if (niche && escolhidos.length === 0) {
+    logger.warn({ niche }, '[grupos] Nicho não existe em config/niches.json — status vazio.');
+  }
+
+  const groupIds = [...new Set(escolhidos.flatMap((n) => n.groups))];
 
   const groups: GroupStatus[] = [];
   for (const id of groupIds) {
@@ -88,27 +108,77 @@ export async function buildGroupStatus(
   };
 }
 
-/** Grava o JSON na pasta que o site serve (escrita atômica). */
-export function writeGroupStatus(data: GroupsFile): string {
-  const file = path.resolve(config.site.groupsFile);
+/**
+ * Grava o JSON na pasta que o site serve (escrita atômica).
+ *
+ * Com `slug`, escreve em <site.dir>/<slug>/groups.json — a pasta da landing
+ * daquele nicho. Sem slug, cai no caminho legado de site de nicho único.
+ */
+export function writeGroupStatus(data: GroupsFile, slug?: string): string {
+  const file = slug
+    ? path.resolve(config.site.dir, slug, 'groups.json')
+    : path.resolve(config.site.groupsFile);
   writeFileAtomic(file, JSON.stringify(data, null, 2));
   return file;
 }
 
-/** Lê os grupos e grava o arquivo. Devolve o resultado (ou null se falhar). */
+/**
+ * Atualiza o status de TODAS as landings configuradas (uma por nicho).
+ *
+ * Sem config/landings.json, mantém o comportamento antigo: um único
+ * groups.json na raiz do site. Devolve o status do nicho padrão — ou null se
+ * nada pôde ser atualizado.
+ */
 export async function refreshGroupStatus(sock: WASocket): Promise<GroupsFile | null> {
+  let cfg: ReturnType<typeof loadLandings> = null;
   try {
-    const data = await buildGroupStatus(sock);
-    const file = writeGroupStatus(data);
-    logger.info(
-      { grupos: data.groups.length, membros: data.totalMembers, proximo: data.join ? 'ok' : 'NENHUM', file },
-      '[grupos] Status atualizado pro site.'
-    );
-    return data;
+    cfg = loadLandings();
   } catch (err) {
-    logger.error({ err: (err as Error).message }, '[grupos] Falha ao atualizar status.');
-    return null;
+    // Config quebrada não pode derrubar o refresh: cai no modo antigo e avisa.
+    logger.error({ err: (err as Error).message }, '[grupos] config/landings.json inválido.');
   }
+
+  if (!cfg) {
+    try {
+      const data = await buildGroupStatus(sock);
+      const file = writeGroupStatus(data);
+      logger.info(
+        { grupos: data.groups.length, membros: data.totalMembers, proximo: data.join ? 'ok' : 'NENHUM', file },
+        '[grupos] Status atualizado pro site.'
+      );
+      return data;
+    } catch (err) {
+      logger.error({ err: (err as Error).message }, '[grupos] Falha ao atualizar status.');
+      return null;
+    }
+  }
+
+  let padrao: GroupsFile | null = null;
+  for (const landing of cfg.landings) {
+    try {
+      const data = await buildGroupStatus(sock, { niche: landing.niche });
+      const file = writeGroupStatus(data, landing.slug);
+      logger.info(
+        {
+          slug: landing.slug,
+          nicho: landing.niche,
+          grupos: data.groups.length,
+          membros: data.totalMembers,
+          proximo: data.join ? 'ok' : 'NENHUM',
+          file,
+        },
+        '[grupos] Status atualizado pro site.'
+      );
+      if (landing.slug === cfg.default) padrao = data;
+    } catch (err) {
+      // Um nicho com problema não pode impedir a atualização dos outros.
+      logger.error(
+        { slug: landing.slug, err: (err as Error).message },
+        '[grupos] Falha ao atualizar status deste nicho.'
+      );
+    }
+  }
+  return padrao;
 }
 
 export { WHATSAPP_LIMIT };

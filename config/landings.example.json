@@ -1,0 +1,71 @@
+{
+  "_comment": [
+    "EXEMPLO com dois nichos. Copie o que precisar pra config/landings.json.",
+    "",
+    "Cada entrada vira uma página em <baseUrl>/<slug>/ com o SEU próprio og.png.",
+    "É por isso que são páginas separadas e não uma só com seletor: o crawler do",
+    "WhatsApp não roda JS, então o card do link é fixo no HTML — uma página só",
+    "significaria o mesmo card genérico pra todo mundo.",
+    "",
+    "`niche` casa com o `name` de config/niches.json: é de lá que saem os grupos",
+    "cujo status alimenta o groups.json daquela pasta.",
+    "",
+    "Regras dos campos:",
+    "  slug      só a-z, 0-9 e hífen (vira pasta e URL)",
+    "  marcas    só marcas que o bot REALMENTE busca (ml.searchTerms do nicho)",
+    "  og.linhas o headline quebrado à mão pras 3 linhas da arte 1200x630",
+    "  og.apoio  opcional; use quando o `apoio` da página for comprido demais",
+    "",
+    "Depois de editar: npm run build-site"
+  ],
+
+  "baseUrl": "https://doutoroferta.com.br",
+  "default": "perfumes",
+
+  "landings": [
+    {
+      "slug": "perfumes",
+      "niche": "perfumes",
+      "title": "Doutor Ofertas — Perfume árabe e importado até 70% OFF",
+      "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.",
+      "headline": "PERFUME ÁRABE E IMPORTADO ATÉ",
+      "highlight": "70% OFF",
+      "apoio": "Ofertas e cupons todo dia no WhatsApp",
+      "marcas": ["Lattafa", "Afnan", "Armaf", "Al Haramain", "Paco Rabanne"],
+      "turma": "TURMA #1 ABRINDO AGORA · ENTRE ANTES DA #2",
+      "nota": "Só o admin posta · Sem cadastro · Saia quando quiser",
+      "rodape": "Você compra direto na Shopee e no Mercado Livre. A gente só acha o preço. Ganhamos comissão das lojas — você paga o mesmo.",
+      "fallbackInvite": "https://chat.whatsapp.com/COLE_O_CONVITE_AQUI",
+      "og": {
+        "title": "Perfume árabe e importado até 70% OFF",
+        "description": "Ofertas e cupons todo dia no WhatsApp. Entrar é grátis.",
+        "linhas": ["PERFUME", "IMPORTADO ATÉ", "70% OFF"],
+        "apoio": "Ofertas e cupons todo dia",
+        "destaque": 2,
+        "pilula": "GRUPO GRÁTIS NO WHATSAPP"
+      }
+    },
+    {
+      "slug": "suplementos",
+      "niche": "fitness",
+      "title": "Doutor Ofertas — Whey e creatina até 60% OFF",
+      "description": "Ofertas e cupons de suplemento todo dia no WhatsApp. Growth, Max Titanium, Integralmédica e mais. Entrar é grátis.",
+      "headline": "WHEY E CREATINA ATÉ",
+      "highlight": "60% OFF",
+      "apoio": "Ofertas e cupons todo dia no WhatsApp",
+      "marcas": ["Growth", "Max Titanium", "Integralmédica", "Dux", "Probiótica"],
+      "turma": "TURMA #1 ABRINDO AGORA · ENTRE ANTES DA #2",
+      "nota": "Só o admin posta · Sem cadastro · Saia quando quiser",
+      "rodape": "Você compra direto na Shopee e no Mercado Livre. A gente só acha o preço. Ganhamos comissão das lojas — você paga o mesmo.",
+      "fallbackInvite": "https://chat.whatsapp.com/COLE_O_CONVITE_AQUI",
+      "og": {
+        "title": "Whey e creatina até 60% OFF",
+        "description": "Ofertas e cupons todo dia no WhatsApp. Entrar é grátis.",
+        "linhas": ["WHEY E", "CREATINA ATÉ", "60% OFF"],
+        "apoio": "Ofertas e cupons todo dia",
+        "destaque": 2,
+        "pilula": "GRUPO GRÁTIS NO WHATSAPP"
+      }
+    }
+  ]
+}

@@ -23,7 +23,8 @@
     "coupon-probe": "tsx src/cli/coupon-probe.ts",
     "ml-link": "tsx src/cli/ml-link.ts",
     "group-links": "tsx src/cli/group-links.ts",
-    "group-status": "tsx src/cli/group-status.ts"
+    "group-status": "tsx src/cli/group-status.ts",
+    "build-site": "tsx src/cli/build-site.ts"
   },
   "engines": {
     "node": ">=20"
@@ -36,7 +37,8 @@
     "luxon": "^3.5.0",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@types/luxon": "^3.4.2",

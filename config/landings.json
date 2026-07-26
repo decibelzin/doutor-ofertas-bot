@@ -1,0 +1,45 @@
+{
+  "_comment": [
+    "Conteúdo das landings, uma por nicho. Versionado de propósito: é copy de",
+    "marketing, não segredo — diferente de config/niches.json, que carrega os",
+    "IDs dos grupos e fica fora do git.",
+    "",
+    "O campo `niche` liga esta landing ao nicho de config/niches.json pelo",
+    "`name`. É de lá que saem os grupos cujo status alimenta o groups.json",
+    "desta pasta.",
+    "",
+    "Depois de editar: npm run build-site"
+  ],
+
+  "baseUrl": "https://doutoroferta.com.br",
+  "default": "perfumes",
+
+  "landings": [
+    {
+      "slug": "perfumes",
+      "niche": "perfumes",
+
+      "title": "Doutor Ofertas — Perfume árabe e importado até 70% OFF",
+      "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.",
+
+      "headline": "PERFUME ÁRABE E IMPORTADO ATÉ",
+      "highlight": "70% OFF",
+      "apoio": "Ofertas e cupons todo dia no WhatsApp",
+      "marcas": ["Lattafa", "Afnan", "Armaf", "Al Haramain", "Paco Rabanne"],
+      "turma": "TURMA #1 ABRINDO AGORA · ENTRE ANTES DA #2",
+      "nota": "Só o admin posta · Sem cadastro · Saia quando quiser",
+      "rodape": "Você compra direto na Shopee e no Mercado Livre. A gente só acha o preço. Ganhamos comissão das lojas — você paga o mesmo.",
+
+      "fallbackInvite": "https://chat.whatsapp.com/J1Gjfc5xgqr66cTUmzNG98",
+
+      "og": {
+        "title": "Perfume árabe e importado até 70% OFF",
+        "description": "Ofertas e cupons todo dia no WhatsApp. Entrar é grátis.",
+        "linhas": ["PERFUME", "IMPORTADO ATÉ", "70% OFF"],
+        "apoio": "Ofertas e cupons todo dia",
+        "destaque": 2,
+        "pilula": "GRUPO GRÁTIS NO WHATSAPP"
+      }
+    }
+  ]
+}

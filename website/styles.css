@@ -264,6 +264,19 @@ body {
   text-wrap: balance;
 }
 
+/* ── DESKTOP BAIXO ─────────────────────────────────────────────────────────
+   Janela de desktop com pouca altura (1366x768, ou qualquer janela não
+   maximizada): o bloco de conteúdo tem altura quase fixa e o rodapé caía pra
+   fora da tela única. Aperta logo, ritmo e headline.
+
+   min-height: 500px exclui celular deitado — esse caso tem regra própria logo
+   abaixo, e sem essa condição um 812x375 cairia aqui também. */
+@media (min-width: 900px) and (min-height: 500px) and (max-height: 820px) {
+  :root { --rhythm: clamp(8px, 1.6vh, 16px); }
+  .logo-ring { width: clamp(64px, 15vh, 150px); height: clamp(64px, 15vh, 150px); }
+  .headline { font-size: clamp(1.95rem, min(9.6vw, 6.6vh), 6.5rem); }
+}
+
 /* ── PAISAGEM / telas muito baixas ─────────────────────────────────────────
    Celular deitado (ex.: 812x375) não cabe em coluna. Vira 2 colunas: marca de
    um lado, chamada e botão do outro — e permite rolar se ainda faltar espaço

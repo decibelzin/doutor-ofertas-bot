@@ -120,6 +120,44 @@ src/
   index.ts             entry: conecta + inicia o agendador
 ```
 
+## Site (landings por nicho)
+
+Uma página estática **por nicho**, servida em `/<slug>`:
+
+```
+website/
+  styles.css            compartilhado por todas as landings
+  assets/               logo (webp + jpg de reserva), favicon
+  index.html            raiz -> encaminha pro nicho padrão
+  perfumes/
+    index.html          GERADO — não edite à mão
+    og.png              GERADO — card 1200x630 deste nicho
+    groups.json         escrito pelo BOT (fora do git)
+```
+
+Por que uma página por nicho e não uma só com seletor: o crawler do WhatsApp
+não executa JS, então o `og:image` é fixo no HTML. Página única significaria o
+mesmo card genérico pra todo mundo — e é no card que o clique é ganho.
+
+```bash
+npm run build-site     # gera as páginas + os og.png a partir da config
+npm run group-status   # força uma atualização dos groups.json (o bot já faz sozinho)
+```
+
+- **Conteúdo:** `config/landings.json` (versionado — é copy, não segredo).
+  Veja `config/landings.example.json` pro formato com dois nichos.
+- **Estrutura/HTML:** `src/site/landing.template.html`.
+- **Grupos:** continuam em `config/niches.json` (fora do git). O campo `niche`
+  da landing casa com o `name` do nicho.
+
+Depois de publicar ou trocar o `og.png`, force o recache do card em
+<https://developers.facebook.com/tools/debug/> — o WhatsApp usa o mesmo
+scraper e guarda a resposta antiga por dias.
+
+Contagem de cliques sem pixel de terceiro: o CTA dispara `sendBeacon` pra
+`/e?c=cta&n=<slug>`. Basta o nginx responder 204 nessa rota que o access.log
+vira o contador, já separado por nicho.
+
 ## Config principal (.env)
 `ML_ENABLED`, `ML_MATT_WORD`, `ML_MATT_TOOL`, `ML_MIN_DISCOUNT_PERCENT`,
 `WHATSAPP_GROUP_IDS`, `START_HOUR`/`END_HOUR`, `POST_INTERVAL_MINUTES`,

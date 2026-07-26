@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'node:path';
 
 function num(value: string | undefined, fallback: number): number {
   if (value === undefined || value === '') return fallback;
@@ -79,8 +80,12 @@ export interface Config {
     alertGroup: string;
   };
   site: {
+    // Raiz servida pelo nginx. Cada nicho vira uma pasta: <dir>/<slug>/.
+    // Default: a pasta de groupsFile, pra quem já tinha SITE_GROUPS_FILE no .env.
+    dir: string;
     // Arquivo JSON que o SITE lê (bot e site na mesma VPS -> escreve direto na
     // pasta servida). Ex.: /var/www/doutorofertas/groups.json
+    // LEGADO: só usado quando não há config/landings.json (site de nicho único).
     groupsFile: string;
     // Teto OPERACIONAL por grupo (folga sobre os 1024 do WhatsApp, evita corrida).
     groupLimit: number;
@@ -185,6 +190,7 @@ export const config: Config = {
     alertGroup: process.env.ADMIN_ALERT_GROUP ?? '',
   },
   site: {
+    dir: process.env.SITE_DIR ?? path.dirname(process.env.SITE_GROUPS_FILE ?? './website/groups.json'),
     groupsFile: process.env.SITE_GROUPS_FILE ?? './website/groups.json',
     groupLimit: num(process.env.SITE_GROUP_LIMIT, 1000),
     refreshMinutes: num(process.env.SITE_REFRESH_MINUTES, 15),

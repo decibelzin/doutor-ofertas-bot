@@ -11,3 +11,8 @@ config/presets.json
 
 # settings locais do Claude Code (por maquina)
 .claude/settings.local.json
+
+# groups.json e dado de runtime: o bot reescreve na VPS a cada 15 min.
+# Versionar isso faz o `git pull` do deploy conflitar com a escrita do bot.
+website/groups.json
+website/*/groups.json

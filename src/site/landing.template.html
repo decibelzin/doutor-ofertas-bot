@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<meta name="theme-color" content="#0A0A0B">
+<!-- Diz ao motor que o documento JA e escuro: sem isso o force-dark do WebView
+     do Android/Samsung pode inverter por cima e lavar o verde do botao. -->
+<meta name="color-scheme" content="dark">
+
+<!-- ── Compartilhamento (WhatsApp/Instagram) ────────────────────────────────
+     O crawler do WhatsApp NAO resolve caminho relativo em og:image e nao
+     executa JS. Tudo aqui precisa ser URL absoluta e existir de verdade.
+     Cada nicho tem o SEU og.png: e no card do link que o clique e ganho. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doutor Ofertas">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="{{PAGE_URL}}">
+<meta property="og:title" content="{{OG_TITLE}}">
+<meta property="og:description" content="{{OG_DESCRIPTION}}">
+<meta property="og:image" content="{{OG_IMAGE}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{OG_TITLE}}">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="../assets/favicon.png">
+
+<!-- O CSS proprio vem primeiro e e o unico bloqueante: ~11 KB, pinta no ato.
+     Fica na RAIZ de propósito: e o mesmo arquivo pra todos os nichos, entao
+     quem visita dois nichos baixa uma vez so. -->
+<link rel="stylesheet" href="../styles.css">
+
+<!-- A fonte fica FORA do caminho critico. Com rel=stylesheet puro, nada na tela
+     era pintado ate o Google responder — em webview de app isso e tela preta.
+     media=print faz o browser baixar sem bloquear; o onload promove pra all. -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap"
+      media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap"></noscript>
+</head>
+<body>
+
+<div class="glow" aria-hidden="true"></div>
+
+<main class="screen">
+
+  <!-- ── Marca ── -->
+  <header class="top">
+    <div class="logo-ring">
+      <picture>
+        <source srcset="../assets/logo.webp" type="image/webp">
+        <img class="logo" src="../assets/logo.jpg" alt="Doutor Ofertas"
+             width="560" height="560" fetchpriority="high" decoding="async">
+      </picture>
+    </div>
+
+    <p class="brand">DOUTOR OFERTAS</p>
+  </header>
+
+  <!-- ── Chamada ── -->
+  <section class="middle">
+    <h1 class="headline">
+      {{HEADLINE}} <span class="gold">{{HEADLINE_HIGHLIGHT}}</span>
+    </h1>
+    <p class="support">{{APOIO}}</p>
+    <!-- Prova concreta: marcas que o bot realmente busca pra este nicho
+         (config/niches.json → ml.searchTerms). Nao inventar marca aqui. -->
+    <p class="marcas">{{MARCAS}}</p>
+  </section>
+
+  <!-- ── Ação ── -->
+  <section class="bottom">
+    <!-- Enquadramento fixo, sem depender do bot. Com grupo novo, "voce chegou
+         cedo" converte melhor que escassez — e a tela de convite do WhatsApp
+         mostra a contagem real de membros logo depois, entao qualquer numero
+         de vaga inflado aqui seria desmentido no clique seguinte. -->
+    <p class="vagas">{{TURMA}}</p>
+
+    <a class="cta" id="cta" href="{{FALLBACK_INVITE}}">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+        <path fill="currentColor" d="M17.472 14.382c-.3-.149-1.777-.878-2.046-.974-.269-.099-.465-.148-.659.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.647.075-.3-.15-1.265-.465-2.403-1.485-.885-.79-1.484-1.77-1.66-2.07-.174-.3-.019-.465.13-.614.135-.133.3-.347.45-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.659-1.591-.903-2.175-.24-.575-.48-.497-.659-.505-.17-.008-.363-.01-.557-.01-.194 0-.51.072-.776.364-.267.292-1.018 1.001-1.018 2.44 0 1.439 1.047 2.827 1.192 3.025.145.199 2.062 3.148 4.993 4.413.697.301 1.242.481 1.667.617.7.222 1.336.19 1.84.115.56-.083 1.778-.727 2.026-1.428.248-.7.248-1.304.174-1.428-.074-.124-.269-.198-.57-.347zM12 21.365c-1.637 0-3.238-.44-4.636-1.272l-.332-.198-3.446.904.92-3.36-.217-.345A9.324 9.324 0 0 1 3.045 12c0-5.163 4.2-9.363 9.366-9.363 2.503 0 4.856.974 6.623 2.742a9.297 9.297 0 0 1 2.742 6.621c0 5.165-4.2 9.365-9.366 9.365h-.01z"/>
+      </svg>
+      <!-- Rotulo curto de proposito: "ENTRAR NO GRUPO DO WHATSAPP" precisava de
+           338px e so havia 312 num aparelho de 390px — quebrava em duas linhas.
+           O destino ja e sinalizado pelo icone, pela linha de apoio e pelo
+           proprio rotulo virar "ABRINDO O WHATSAPP…" no toque. -->
+      <span id="cta-label">ENTRAR NO GRUPO GRÁTIS</span>
+    </a>
+
+    <!-- "Gratis" aparece so uma vez (no botao): repetir soa a quem esta se
+         defendendo de uma acusacao. Aqui ficam as objecoes que sobram. -->
+    <p class="cta-note">{{NOTA}}</p>
+
+    <!-- Rota de fuga: so aparece se o handoff pro app falhar (webview que
+         engole a navegacao). Sem isso, quem toca e nao ve nada vai embora. -->
+    <p class="escape" id="escape" hidden>
+      Não abriu o WhatsApp?
+      <button type="button" id="copiar">Copiar o link do grupo</button>
+    </p>
+  </section>
+
+  <footer class="foot">
+    <p>{{RODAPE}}</p>
+  </footer>
+
+</main>
+
+<script>
+  (() => {
+    const cta = document.getElementById('cta');
+    if (!cta) return;
+    const label = document.getElementById('cta-label');
+    const escape = document.getElementById('escape');
+    const copiar = document.getElementById('copiar');
+    const ROTULO = label ? label.textContent : '';
+
+    /* ── Clique ───────────────────────────────────────────────────────────
+       O <a> continua valendo sozinho se o JS falhar. Quando o JS roda, ele
+       navega no contexto do TOPO: o webview do Instagram/TikTok costuma
+       engolir target="_blank"/window.open, e ai o toque nao produzia nada. */
+    cta.addEventListener('click', (ev) => {
+      /* Rastro do clique. Endpoint na propria VPS respondendo 204 — o log do
+         nginx vira o contador, sem cookie, sem pixel de terceiro. O nicho vai
+         junto pra dar pra comparar as landings entre si. */
+      try {
+        navigator.sendBeacon(
+          '/e?c=cta&n={{SLUG}}&r=' + encodeURIComponent(document.referrer || 'direto')
+        );
+      } catch (e) { /* sendBeacon ausente: segue o clique normalmente */ }
+
+      ev.preventDefault();
+      if (label) label.textContent = 'ABRINDO O WHATSAPP…';
+
+      try { window.top.location.href = cta.href; }
+      catch (e) { window.location.href = cta.href; }
+
+      /* Se a pagina ainda estiver visivel depois de 2,5s, o handoff falhou:
+         devolve o rotulo e oferece o plano B em vez de deixar a pessoa achando
+         que o site esta quebrado. */
+      setTimeout(() => {
+        if (document.visibilityState !== 'visible') return;
+        if (label) label.textContent = ROTULO;
+        if (escape) escape.hidden = false;
+      }, 2500);
+    });
+
+    if (copiar) {
+      copiar.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(cta.href);
+          copiar.textContent = 'Link copiado — cole no WhatsApp';
+        } catch (e) {
+          copiar.textContent = cta.href;
+        }
+      });
+    }
+
+    /* ── Roteamento do grupo ──────────────────────────────────────────────
+       O bot roda na mesma VPS e reescreve o groups.json DESTE nicho com o link
+       do grupo que AINDA TEM VAGA. Se o arquivo faltar, o href do HTML vale. */
+    (async () => {
+      try {
+        const res = await fetch('./groups.json', { cache: 'no-cache' });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.join) { cta.href = data.join; return; }
+
+        /* join nulo pode ser lotacao REAL ou o bot ter perdido admin. So
+           anuncia lotado quando os dados confirmam; caso contrario mantem o
+           href de reserva e nao assusta ninguem a toa. */
+        const grupos = data.groups || [];
+        if (grupos.length > 0 && grupos.every((g) => g.full)) {
+          const vagas = document.querySelector('.vagas');
+          if (vagas) vagas.textContent = 'TURMA NOVA ABRE EM BREVE';
+          /* Nunca deixar botao verde ativo apontando pra grupo cheio. */
+          cta.removeAttribute('href');
+          cta.classList.add('cta--off');
+          if (label) label.textContent = 'GRUPOS LOTADOS POR ENQUANTO';
+        }
+      } catch (e) { /* offline: mantem o href de reserva */ }
+    })();
+  })();
+</script>
+</body>
+</html>
