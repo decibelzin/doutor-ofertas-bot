@@ -16,7 +16,7 @@
   --muted: #9b8f7c;
 
   /* Ritmo vertical: cresce com a ALTURA da tela (não com a largura) */
-  --rhythm: clamp(12px, 2.2vh, 26px);
+  --rhythm: clamp(12px, 2.4vh, 34px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +31,7 @@ body {
   min-height: 100svh;          /* svh: não "pula" com a barra do navegador mobile */
   display: flex;
   justify-content: center;
+  align-items: center;         /* centraliza a composição em telas altas */
 }
 
 /* Brilho dourado atrás do logo — escala junto com a tela */
@@ -51,7 +52,7 @@ body {
   z-index: 1;
   width: 100%;
   /* Acompanha a tela: coluna no celular, mais presença no desktop */
-  max-width: clamp(320px, 92vw, 560px);
+  max-width: clamp(320px, min(92vw, 88vh), 900px);
   min-height: 100svh;
   padding:
     clamp(16px, 3vh, 40px)
@@ -65,6 +66,9 @@ body {
   text-align: center;
 }
 
+/* Blocos mantem a altura natural — sem isso o flex esmaga o logo em tela alta */
+.screen > * { flex: 0 0 auto; }
+
 /* ── Marca ─────────────────────────────────────────────────────────────── */
 .top {
   display: flex; flex-direction: column; align-items: center;
@@ -73,8 +77,8 @@ body {
 
 .logo-ring {
   /* vmin faz o logo respeitar a MENOR dimensão — não estoura em paisagem */
-  width: clamp(64px, 22vmin, 128px);
-  aspect-ratio: 1;
+  width: clamp(64px, 23vmin, 280px);
+  height: clamp(64px, 23vmin, 280px);
   padding: 4px;
   border: 1px solid var(--gold);
   border-radius: 50%;
@@ -85,7 +89,7 @@ body {
 
 .brand {
   display: inline-flex; align-items: center; gap: .4em;
-  font-size: clamp(11px, 1.6vw, 14px);
+  font-size: clamp(11px, min(1.6vw, 1.8vh), 24px);
   font-weight: 700;
   letter-spacing: .2em;
   color: var(--gold);
@@ -99,7 +103,7 @@ body {
   font-family: 'Anton', 'Inter', sans-serif;
   font-weight: 400;
   /* Escala contínua: 320px → ~2.05rem; desktop → 4rem. Nunca estoura. */
-  font-size: clamp(2.05rem, 11vw, 4rem);
+  font-size: clamp(2.05rem, min(11vw, 9.6vh), 7.5rem);
   line-height: 1;
   letter-spacing: -.01em;
   text-transform: uppercase;
@@ -115,7 +119,7 @@ body {
 }
 
 .support {
-  font-size: clamp(11px, 1.5vw, 14px);
+  font-size: clamp(11px, min(1.5vw, 1.8vh), 24px);
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -132,7 +136,7 @@ body {
 
 /* Escassez REAL (só aparece quando o bot informa poucas vagas) */
 .vagas {
-  font-size: clamp(11px, 1.5vw, 14px);
+  font-size: clamp(11px, min(1.5vw, 1.8vh), 24px);
   font-weight: 700;
   letter-spacing: .12em;
   color: var(--gold);
@@ -142,12 +146,12 @@ body {
 .cta {
   width: 100%;
   /* Nunca menor que um alvo de toque confortável, nunca gigante */
-  height: clamp(52px, 7.5vh, 68px);
+  height: clamp(52px, 8.4vh, 108px);
   display: flex; align-items: center; justify-content: center;
   gap: .6em;
   background: var(--green);
   color: #fff;
-  font-size: clamp(14px, 1.8vw, 18px);
+  font-size: clamp(14px, min(1.8vw, 2.4vh), 30px);
   font-weight: 700;
   letter-spacing: .04em;
   text-decoration: none;
@@ -160,7 +164,7 @@ body {
 .cta:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
 .cta-note {
-  font-size: clamp(9px, 1.2vw, 12px);
+  font-size: clamp(9px, min(1.2vw, 1.5vh), 20px);
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -170,7 +174,7 @@ body {
 
 /* ── Rodapé ────────────────────────────────────────────────────────────── */
 .foot p {
-  font-size: clamp(9px, 1.2vw, 12px);
+  font-size: clamp(9px, min(1.2vw, 1.5vh), 20px);
   font-weight: 700;
   letter-spacing: .02em;
   text-transform: uppercase;
