@@ -27,12 +27,17 @@
 <meta property="og:image:alt" content="{{OG_TITLE}}">
 <meta name="twitter:card" content="summary_large_image">
 
-<link rel="icon" href="../assets/favicon.png">
+<link rel="canonical" href="{{PAGE_URL}}">
+<link rel="icon" href="/assets/favicon.png">
 
-<!-- O CSS proprio vem primeiro e e o unico bloqueante: ~11 KB, pinta no ato.
-     Fica na RAIZ de propósito: e o mesmo arquivo pra todos os nichos, entao
-     quem visita dois nichos baixa uma vez so. -->
-<link rel="stylesheet" href="../styles.css">
+<!-- ⚠️ Caminhos ABSOLUTOS (com / na frente), nao relativos.
+     A pagina e servida em DUAS formas: /<slug>/ e /<slug> sem barra. Antes o
+     /<slug> devolvia 301 pra versao com barra, e o fetcher do WhatsApp NAO
+     segue redirect — ele lia a resposta vazia do 301 e desistia do card. Como
+     e justamente essa a forma que a pessoa digita, o link saia sem imagem.
+     Agora as duas devolvem 200, e caminho relativo resolveria errado na forma
+     sem barra (./groups.json viraria /groups.json). -->
+<link rel="stylesheet" href="/styles.css">
 
 <!-- A fonte fica FORA do caminho critico. Com rel=stylesheet puro, nada na tela
      era pintado ate o Google responder — em webview de app isso e tela preta.
@@ -52,8 +57,8 @@
   <header class="top">
     <div class="logo-ring">
       <picture>
-        <source srcset="../assets/logo.webp" type="image/webp">
-        <img class="logo" src="../assets/logo.jpg" alt="Doutor Ofertas"
+        <source srcset="/assets/logo.webp" type="image/webp">
+        <img class="logo" src="/assets/logo.jpg" alt="Doutor Ofertas"
              width="560" height="560" fetchpriority="high" decoding="async">
       </picture>
     </div>
@@ -169,7 +174,9 @@
        do grupo que AINDA TEM VAGA. Se o arquivo faltar, o href do HTML vale. */
     (async () => {
       try {
-        const res = await fetch('./groups.json', { cache: 'no-cache' });
+        /* Absoluto: em /<slug> sem barra, './groups.json' resolveria pra
+           /groups.json e cairia em 404. */
+        const res = await fetch('/{{SLUG}}/groups.json', { cache: 'no-cache' });
         if (!res.ok) return;
         const data = await res.json();
 
