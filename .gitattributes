@@ -1,0 +1,14 @@
+# Scripts de shell SEMPRE com LF, mesmo commitados do Windows. Um .sh com CRLF
+# falha no Linux com "bad interpreter: /usr/bin/env bash^M" — erro que não diz
+# o que é. Hoje o git normaliza na saída por causa do autocrlf, mas isso é
+# config de máquina; aqui fica gravado no repositório.
+*.sh text eol=lf
+
+# O nginx e o systemd também não gostam de CRLF nos arquivos que geram.
+*.service text eol=lf
+
+# Binários: nunca converter.
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
