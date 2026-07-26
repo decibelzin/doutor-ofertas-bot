@@ -158,6 +158,46 @@ Contagem de cliques sem pixel de terceiro: o CTA dispara `sendBeacon` pra
 `/e?c=cta&n=<slug>`. Basta o nginx responder 204 nessa rota que o access.log
 vira o contador, já separado por nicho.
 
+## Produção (VPS)
+
+`root@168.231.89.180` — Ubuntu 25.04. **A máquina não é dedicada:** também roda
+`dashrp.com.br`. Qualquer mexida em nginx pede `nginx -t` antes do reload.
+
+| o quê | onde |
+|---|---|
+| Repo | `/srv/doutor-ofertas-bot` (não em `/root`: modo 700 impede o nginx de atravessar) |
+| Site servido | `/srv/doutor-ofertas-bot/website` — o nginx aponta pra dentro do repo |
+| Serviço | `systemd: doutor-ofertas` |
+| Logs | `journalctl -u doutor-ofertas -f` |
+| Cliques do CTA | `/var/log/nginx/doutoroferta-cliques.log` |
+
+### Fluxo de trabalho
+
+Tudo é editado **na máquina local**. A VPS só recebe `git pull`:
+
+```bash
+npm run build-site     # gera as páginas e os og.png (local!)
+git add -A && git commit && git push
+npm run deploy         # ssh na VPS: git pull + build/restart só se precisar
+```
+
+O `build-site` roda **local de propósito**: a arte do `og.png` pede as fontes
+Impact/Arial, que não existem num Ubuntu limpo — gerar na VPS sairia diferente
+do que foi validado. As páginas geradas são commitadas justamente pra isso.
+
+O `deploy-vps.sh` só recompila e reinicia o bot quando `src/` mudou. Mudança só
+de landing não derruba a conexão do WhatsApp (reconectar é o momento de risco).
+
+### Fora do git (vai à mão, uma vez)
+
+`.env`, `config/niches.json`, `config/presets.json` e `data/` (sessão do
+Baileys + estado). O `.env` da VPS tem uma linha que o local não tem:
+`SITE_DIR=/srv/doutor-ofertas-bot/website`.
+
+⚠️ A sessão do Baileys **não roda em dois lugares**. Com o bot ativo na VPS, não
+suba o bot local — e os CLIs que falam com o WhatsApp precisam rodar lá:
+`ssh root@168.231.89.180 "cd /srv/doutor-ofertas-bot && npm run group-status"`.
+
 ## Config principal (.env)
 `ML_ENABLED`, `ML_MATT_WORD`, `ML_MATT_TOOL`, `ML_MIN_DISCOUNT_PERCENT`,
 `WHATSAPP_GROUP_IDS`, `START_HOUR`/`END_HOUR`, `POST_INTERVAL_MINUTES`,

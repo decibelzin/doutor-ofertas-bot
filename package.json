@@ -24,7 +24,8 @@
     "ml-link": "tsx src/cli/ml-link.ts",
     "group-links": "tsx src/cli/group-links.ts",
     "group-status": "tsx src/cli/group-status.ts",
-    "build-site": "tsx src/cli/build-site.ts"
+    "build-site": "tsx src/cli/build-site.ts",
+    "deploy": "ssh root@168.231.89.180 \"bash /srv/doutor-ofertas-bot/scripts/deploy-vps.sh\""
   },
   "engines": {
     "node": ">=20"
