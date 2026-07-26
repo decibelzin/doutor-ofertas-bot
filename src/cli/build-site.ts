@@ -172,9 +172,15 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
     .png()
     .toBuffer();
 
+  /* JPEG e não PNG: a arte é fotográfica (o mascote), então o PNG ficava em
+     ~190 KB pra render igual. O WhatsApp é conservador com o peso do og:image
+     e desiste da prévia em imagens grandes — JPEG entrega o mesmo card por
+     volta de 1/3 do tamanho. chromaSubsampling 4:4:4 evita que o texto em
+     caixa alta e o dourado fiquem com borda suja, que é o defeito típico do
+     JPEG padrão (4:2:0) em cima de tipografia. */
   await sharp(Buffer.from(svg))
     .composite([{ input: logoRedondo, left: CX - LOGO / 2, top: Math.round(H / 2 - LOGO / 2) }])
-    .png({ compressionLevel: 9 })
+    .jpeg({ quality: 88, progressive: true, chromaSubsampling: '4:4:4', mozjpeg: true })
     .toFile(destino);
 }
 
@@ -223,7 +229,7 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
     PAGE_URL: pageUrl,
     OG_TITLE: escapeHtml(landing.og.title),
     OG_DESCRIPTION: escapeHtml(landing.og.description),
-    OG_IMAGE: `${cfg.baseUrl}/${landing.slug}/og.png`,
+    OG_IMAGE: `${cfg.baseUrl}/${landing.slug}/og.jpg`,
     HEADLINE: escapeHtml(landing.headline),
     HEADLINE_HIGHLIGHT: escapeHtml(landing.highlight),
     APOIO: escapeHtml(landing.apoio),
@@ -239,7 +245,9 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
      Conteúdo: config/landings.json · Estrutura: src/site/landing.template.html -->\n`;
   writeFileAtomic(path.join(dir, 'index.html'), html.replace(/^<!doctype html>\n/i, `<!doctype html>\n${aviso}`));
 
-  await geraOg(landing, path.join(dir, 'og.png'));
+  await geraOg(landing, path.join(dir, 'og.jpg'));
+  // Card antigo em PNG: sai do caminho pra ninguem servir arte velha.
+  fs.rmSync(path.join(dir, 'og.png'), { force: true });
 
   conferConvite(landing, dir);
 
