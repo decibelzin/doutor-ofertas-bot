@@ -54,7 +54,7 @@ find "$REPO/website" -type f -exec chmod 644 {} +
 echo
 echo "→ conferindo"
 printf '   servico: %s\n' "$(systemctl is-active "$SERVICO")"
-for p in /perfumes/ /perfumes/og.png /styles.css; do
+for p in /perfumes/ /perfumes/og.jpg /styles.css /perfumes/groups.json; do
   printf '   %s  <- %s\n' \
     "$(curl -s -o /dev/null -w '%{http_code}' --resolve doutoroferta.com.br:443:127.0.0.1 --max-time 10 "https://doutoroferta.com.br$p")" "$p"
 done
