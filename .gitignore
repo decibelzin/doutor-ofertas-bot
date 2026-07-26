@@ -8,3 +8,6 @@ config/niches.json
 *.log
 npm-debug.log*
 config/presets.json
+
+# settings locais do Claude Code (por maquina)
+.claude/settings.local.json
