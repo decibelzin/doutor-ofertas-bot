@@ -104,7 +104,9 @@ body {
   font-weight: 400;
   /* Escala contínua: 320px → ~2.05rem; desktop → 4rem. Nunca estoura. */
   font-size: clamp(2.05rem, min(11vw, 9.6vh), 7.5rem);
-  line-height: 1;
+  /* 1 e apertado demais pra CAIXA ALTA com acento: o E de ATE batia na linha
+     de cima. 1.08 da espaco pro diacritico sem soltar o bloco. */
+  line-height: 1.08;
   letter-spacing: -.01em;
   text-transform: uppercase;
   text-wrap: balance;          /* evita linha órfã onde suportado */
