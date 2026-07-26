@@ -1,8 +1,78 @@
 {
-  "updatedAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "2026-07-25T21:54:38.303Z",
   "limit": 1000,
-  "join": null,
-  "totalMembers": 0,
-  "groups": [],
-  "_nota": "Placeholder. O bot sobrescreve este arquivo (SITE_GROUPS_FILE) com os dados reais."
+  "join": "https://chat.whatsapp.com/J1Gjfc5xgqr66cTUmzNG98",
+  "totalMembers": 21,
+  "groups": [
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #01",
+      "link": "https://chat.whatsapp.com/J1Gjfc5xgqr66cTUmzNG98",
+      "members": 3,
+      "vacancies": 997,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #02",
+      "link": "https://chat.whatsapp.com/Lo7xEynpl8g4KeK7uUPblZ",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #03",
+      "link": "https://chat.whatsapp.com/ETWJzjlTgtB6TzIpKO49MJ",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #04",
+      "link": "https://chat.whatsapp.com/IbR4t2zhWyd34XAri4NrJn",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #05",
+      "link": "https://chat.whatsapp.com/G0GuGwFHIfpKzRec9pga4i",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #06",
+      "link": "https://chat.whatsapp.com/EIBTRtAwjH23dQTi9c0k12",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #07",
+      "link": "https://chat.whatsapp.com/L92jJHEltgG3nVOzOdinT7",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #08",
+      "link": "https://chat.whatsapp.com/FZJ58Qz1hWd9m9hx8A2h7Z",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #09",
+      "link": "https://chat.whatsapp.com/EdfbHIZpVNpKQNtYJhBZ01",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    },
+    {
+      "name": "Perfumes | DOUTOR OFERTAS | #10",
+      "link": "https://chat.whatsapp.com/GHPmFl9edSM18bIeMMFBsI",
+      "members": 2,
+      "vacancies": 998,
+      "full": false
+    }
+  ]
 }
