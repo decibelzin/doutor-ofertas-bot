@@ -43,8 +43,13 @@ else
   echo "→ src intacto: landing atualizada sem tocar no bot"
 fi
 
-# O nginx serve por caminho; www-data precisa atravessar e ler.
-chmod -R 755 "$REPO/website"
+# O nginx serve por caminho: www-data precisa ATRAVESSAR as pastas (755) e LER
+# os arquivos (644). Nao usar `chmod -R 755`: isso marca arquivo como
+# executavel, o git rastreia esse bit, e cada deploy passava a criar mudancas
+# locais que travavam o `git pull` seguinte com "local changes would be
+# overwritten".
+find "$REPO/website" -type d -exec chmod 755 {} +
+find "$REPO/website" -type f -exec chmod 644 {} +
 
 echo
 echo "→ conferindo"
