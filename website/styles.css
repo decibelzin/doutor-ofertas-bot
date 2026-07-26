@@ -48,13 +48,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
+  justify-content: space-evenly;
+  gap: 20px;
   text-align: center;
 }
 
 /* ── Marca ─────────────────────────────────────────────────────────────── */
-.top { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.top { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
 .logo-ring {
   width: 96px; height: 96px;
@@ -74,7 +74,7 @@ body {
 .verified { width: 14px; height: 14px; color: var(--gold); flex: none; }
 
 /* ── Chamada ───────────────────────────────────────────────────────────── */
-.middle { display: flex; flex-direction: column; gap: 16px; }
+.middle { display: flex; flex-direction: column; gap: 14px; }
 
 .headline {
   font-family: 'Anton', 'Inter', sans-serif;
@@ -147,7 +147,7 @@ body {
 
 /* Telas curtas: aperta o respiro pra continuar cabendo sem rolar */
 @media (max-height: 700px) {
-  .screen { padding-top: 24px; gap: 18px; }
+  .screen { padding: 20px 28px calc(20px + env(safe-area-inset-bottom)); gap: 14px; }
   .logo-ring { width: 76px; height: 76px; }
   .headline { font-size: clamp(2.1rem, 10.5vw, 2.6rem); }
   .cta { height: 56px; }
