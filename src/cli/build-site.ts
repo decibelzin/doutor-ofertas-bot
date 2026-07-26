@@ -180,6 +180,38 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
 
 // ── Geração ───────────────────────────────────────────────────────────────
 
+/**
+ * O `fallbackInvite` fica GRAVADO no HTML e é o link que vale nos primeiros
+ * instantes, antes do fetch do groups.json — e é o único link se o JS falhar.
+ *
+ * Ele envelhece calado: basta recriar um grupo no WhatsApp e o convite antigo
+ * morre sem nada acusar. Aconteceu de verdade (grupos 1 e 2 recriados), e o
+ * sintoma seria uma fatia dos cliques caindo em "convite inválido".
+ *
+ * Aqui só avisa: o groups.json é dado de runtime e pode legitimamente não
+ * existir na máquina que gera o site, então isso não pode falhar o build.
+ */
+function conferConvite(landing: Landing, dir: string): void {
+  const arquivo = path.join(dir, 'groups.json');
+  if (!fs.existsSync(arquivo)) return;
+
+  let join: string | null = null;
+  try {
+    join = (JSON.parse(fs.readFileSync(arquivo, 'utf8')) as { join?: string | null }).join ?? null;
+  } catch {
+    return;
+  }
+  if (!join || join === landing.fallbackInvite) return;
+
+  const aviso =
+    `fallbackInvite de "${landing.slug}" não bate com o groups.json.\n` +
+    `      no config: ${landing.fallbackInvite}\n` +
+    `      no grupo:  ${join}\n` +
+    `      Se o grupo foi recriado, o convite do config está morto — atualize config/landings.json.`;
+  logger.warn({ slug: landing.slug, config: landing.fallbackInvite, atual: join }, `[site] ${aviso}`);
+  console.warn(`\n⚠  ${aviso}\n`);
+}
+
 async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, raiz: string): Promise<void> {
   const dir = path.join(raiz, landing.slug);
   fs.mkdirSync(dir, { recursive: true });
@@ -208,6 +240,8 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
   writeFileAtomic(path.join(dir, 'index.html'), html.replace(/^<!doctype html>\n/i, `<!doctype html>\n${aviso}`));
 
   await geraOg(landing, path.join(dir, 'og.png'));
+
+  conferConvite(landing, dir);
 
   logger.info({ slug: landing.slug, url: pageUrl }, '[site] Landing gerada.');
 }
