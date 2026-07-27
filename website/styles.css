@@ -279,6 +279,57 @@ body {
   .headline { font-size: clamp(1.95rem, min(9.6vw, 6.6vh), 6.5rem); }
 }
 
+/* ── HUB (a raiz) ──────────────────────────────────────────────────────────
+   Página de marca, não de conversão: quem cai aqui buscou "doutor ofertas" ou
+   digitou o domínio. Anúncio aponta direto pra /<nicho>. Por isso ela pode ter
+   um clique a mais sem custar conversão de campanha. */
+.headline-hub {
+  font-family: 'Anton', Impact, 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.6rem, min(7.4vw, 5.6vh), 4rem);
+  line-height: 1.08;
+  letter-spacing: -.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.nichos {
+  width: 100%;
+  display: flex; flex-direction: column;
+  gap: clamp(8px, 1.4vh, 14px);
+}
+
+/* Cada nicho é um <a> de verdade: é seguindo estes links que o crawler acha as
+   páginas de nicho a partir da raiz. */
+.nicho {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  min-height: clamp(56px, 8vh, 88px);
+  padding: 12px clamp(14px, 4vw, 22px);
+  border: 1px solid rgba(232, 184, 75, .35);
+  border-radius: 14px;
+  background: rgba(232, 184, 75, .05);
+  color: var(--text);
+  text-decoration: none;
+  text-align: left;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.nicho-nome {
+  font-size: clamp(13px, 3.4vw, 20px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+}
+.nicho-nome b { color: var(--gold); font-weight: 700; }
+.nicho-seta { color: var(--gold); font-size: 1.6em; line-height: 1; flex: none; }
+
+.nicho:active { transform: scale(.99); }
+.nicho:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) {
+  .nicho:hover { border-color: var(--gold); background: rgba(232, 184, 75, .1); }
+}
+
 /* ── PAISAGEM / telas muito baixas ─────────────────────────────────────────
    Celular deitado (ex.: 812x375) não cabe em coluna. Vira 2 colunas: marca de
    um lado, chamada e botão do outro - e permite rolar se ainda faltar espaço

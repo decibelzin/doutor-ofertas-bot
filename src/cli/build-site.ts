@@ -24,6 +24,7 @@ import { writeFileAtomic } from '../util/atomic';
  */
 
 const TEMPLATE = path.resolve('src/site/landing.template.html');
+const TEMPLATE_HUB = path.resolve('src/site/hub.template.html');
 /** Arte em alta pro card; cai pro JPG servido se a original não estiver aqui. */
 const LOGO_FONTE = ['assets/logo-original.png', 'website/assets/logo.jpg'];
 
@@ -304,9 +305,15 @@ ${JSON.stringify(dados, null, 2).replace(/</g, '\u003c')}
  * ainda, o sitemap é o substituto dos links que não existem.
  */
 function geraSitemap(cfg: LandingsFile, raiz: string, hoje: string): void {
-  const urls = cfg.landings
-    .map((l) => `  <url>
-    <loc>${cfg.baseUrl}/${l.slug}/</loc>
+  // A raiz só entra quando é hub de verdade; como redirect `noindex` ela não
+  // deve ser oferecida pra indexação.
+  const alvos = [
+    ...(cfg.hub ? [''] : []),
+    ...cfg.landings.map((l) => `${l.slug}/`),
+  ];
+  const urls = alvos
+    .map((caminho) => `  <url>
+    <loc>${cfg.baseUrl}/${caminho}</loc>
     <lastmod>${hoje}</lastmod>
   </url>`)
     .join('\n');
@@ -318,7 +325,7 @@ ${urls}
 </urlset>
 `
   );
-  logger.info({ urls: cfg.landings.length }, '[site] sitemap.xml gerado.');
+  logger.info({ urls: alvos.length }, '[site] sitemap.xml gerado.');
 }
 
 /** robots.txt: libera tudo e diz onde está o sitemap. */
@@ -340,10 +347,24 @@ function geraRobots(cfg: LandingsFile, raiz: string): void {
   logger.info('[site] robots.txt gerado.');
 }
 
-/** A raiz não é destino de anúncio: só encaminha quem chega sem nicho. */
-function geraRaiz(cfg: LandingsFile, raiz: string): void {
-  const destino = `./${cfg.default}/`;
-  const html = `<!doctype html>
+/**
+ * A RAIZ é o hub: uma página indexável que lista os nichos.
+ *
+ * Antes ela era `noindex` + redirect, e isso custava justamente a busca por
+ * marca: a URL que carrega o nome "Doutor Ofertas" não existia pro Google.
+ * Com vários nichos, pior ainda - quem procurasse a marca cairia numa página
+ * que só sabe falar de um deles.
+ *
+ * Ela NÃO é destino de anúncio. Campanha aponta direto pra /<nicho>, que é a
+ * landing de conversão; aqui cai quem digita o domínio ou vem da busca. Por
+ * isso ela pode ter um clique a mais sem custar conversão de campanha.
+ *
+ * Sem o bloco `hub` no config, cai no redirect antigo.
+ */
+function geraHub(cfg: LandingsFile, raiz: string, tplHub: string): void {
+  if (!cfg.hub) {
+    const destino = `./${cfg.default}/`;
+    writeFileAtomic(path.join(raiz, 'index.html'), `<!doctype html>
 <!-- GERADO por \`npm run build-site\`. NÃO edite à mão. -->
 <html lang="pt-BR">
 <head>
@@ -358,9 +379,70 @@ function geraRaiz(cfg: LandingsFile, raiz: string): void {
 <p><a href="${destino}" style="color:${GOLD}">Ir para as ofertas</a></p>
 </body>
 </html>
-`;
-  writeFileAtomic(path.join(raiz, 'index.html'), html);
-  logger.info({ destino }, '[site] Raiz encaminha pro nicho padrão.');
+`);
+    logger.info({ destino }, '[site] Sem bloco `hub`: raiz segue como redirect.');
+    return;
+  }
+
+  const pageUrl = `${cfg.baseUrl}/`;
+  // <a> de verdade: é seguindo estes links que o crawler acha as páginas de
+  // nicho a partir da raiz.
+  const nichos = cfg.landings
+    .map(
+      (l) => `    <a class="nicho" href="/${l.slug}">
+      <span class="nicho-nome">${escapeHtml(l.headline)} <b>${escapeHtml(l.highlight)}</b></span>
+      <span class="nicho-seta" aria-hidden="true">›</span>
+    </a>`
+    )
+    .join('\n');
+
+  const org = `${cfg.baseUrl}/#organizacao`;
+  const schema = `<script type="application/ld+json">\n${JSON.stringify(
+    {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Organization',
+          '@id': org,
+          name: 'Doutor Ofertas',
+          url: pageUrl,
+          logo: `${cfg.baseUrl}/assets/logo.jpg`,
+          description: cfg.hub.description,
+        },
+        {
+          '@type': 'WebSite',
+          '@id': `${pageUrl}#site`,
+          url: pageUrl,
+          name: 'Doutor Ofertas',
+          inLanguage: 'pt-BR',
+          publisher: { '@id': org },
+        },
+      ],
+    },
+    null,
+    2
+  ).replace(/</g, '\\u003c')}\n</script>`;
+
+  const html = render(tplHub, {
+    TITLE: escapeHtml(cfg.hub.title),
+    DESCRIPTION: escapeHtml(cfg.hub.description),
+    H1: escapeHtml(cfg.hub.h1),
+    APOIO: escapeHtml(cfg.hub.apoio),
+    RODAPE: escapeHtml(cfg.hub.rodape),
+    PAGE_URL: pageUrl,
+    // A raiz empresta o card do nicho em destaque: uma arte a menos pra manter.
+    OG_IMAGE: `${cfg.baseUrl}/${cfg.default}/og.jpg`,
+    SCHEMA: schema,
+    NICHOS: nichos,
+  });
+
+  const aviso = `<!-- GERADO por \`npm run build-site\`. NÃO edite à mão.
+     Conteúdo: bloco "hub" em config/landings.json · Estrutura: src/site/hub.template.html -->\n`;
+  writeFileAtomic(
+    path.join(raiz, 'index.html'),
+    html.replace(/^<!doctype html>\n/i, `<!doctype html>\n${aviso}`)
+  );
+  logger.info({ nichos: cfg.landings.length }, '[site] Hub gerado na raiz.');
 }
 
 async function main(): Promise<void> {
@@ -372,7 +454,7 @@ async function main(): Promise<void> {
   fs.mkdirSync(raiz, { recursive: true });
 
   for (const landing of cfg.landings) await geraLanding(cfg, landing, tpl, raiz);
-  geraRaiz(cfg, raiz);
+  geraHub(cfg, raiz, fs.readFileSync(TEMPLATE_HUB, 'utf8'));
   geraSitemap(cfg, raiz, new Date().toISOString().slice(0, 10));
   geraRobots(cfg, raiz);
 

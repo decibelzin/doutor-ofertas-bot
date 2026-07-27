@@ -51,11 +51,28 @@ export interface Landing {
   og: LandingOg;
 }
 
+/**
+ * Copy da página-raiz (o hub).
+ *
+ * Ela existe pra BUSCA POR MARCA: é onde cai quem digita o domínio ou procura
+ * "doutor ofertas". Nenhum anúncio aponta pra cá - campanha vai direto pra
+ * /<nicho>, que é a landing de conversão.
+ */
+export interface Hub {
+  title: string;
+  description: string;
+  h1: string;
+  apoio: string;
+  rodape: string;
+}
+
 export interface LandingsFile {
   /** Origem pública, sem barra no fim. Usada nas metas Open Graph. */
   baseUrl: string;
-  /** Slug pra onde a raiz `/` manda quem chega sem nicho. */
+  /** Nicho em destaque. Também é o og:image que a raiz empresta. */
   default: string;
+  /** Sem isto, a raiz vira um redirect simples (comportamento antigo). */
+  hub?: Hub;
   landings: Landing[];
 }
 
@@ -113,5 +130,5 @@ export function loadLandings(): LandingsFile | null {
     '[Landings] Configuração carregada.'
   );
 
-  return { baseUrl, default: padrao, landings };
+  return { baseUrl, default: padrao, ...(raw.hub ? { hub: raw.hub } : {}), landings };
 }

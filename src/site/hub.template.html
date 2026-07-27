@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<meta name="theme-color" content="#0A0A0B">
+<meta name="color-scheme" content="dark">
+
+<!-- Esta pagina existe pra BUSCA POR MARCA. Nenhum anuncio aponta pra ca:
+     campanha vai direto pra /<nicho>, que e a landing de conversao. Aqui e
+     onde cai quem digita o dominio ou procura "doutor ofertas" no Google. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doutor Ofertas">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="{{PAGE_URL}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESCRIPTION}}">
+<meta property="og:image" content="{{OG_IMAGE}}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="canonical" href="{{PAGE_URL}}">
+
+{{SCHEMA}}
+<link rel="icon" href="/assets/favicon.png">
+<link rel="stylesheet" href="/styles.css">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap"
+      media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap"></noscript>
+</head>
+<body>
+
+<div class="glow" aria-hidden="true"></div>
+
+<main class="screen hub">
+
+  <header class="top">
+    <div class="logo-ring">
+      <picture>
+        <source srcset="/assets/logo.webp" type="image/webp">
+        <img class="logo" src="/assets/logo.jpg" alt="Doutor Ofertas"
+             width="560" height="560" fetchpriority="high" decoding="async">
+      </picture>
+    </div>
+    <p class="brand">DOUTOR OFERTAS</p>
+  </header>
+
+  <section class="middle">
+    <h1 class="headline-hub">{{H1}}</h1>
+    <p class="support">{{APOIO}}</p>
+  </section>
+
+  <!-- Um item por nicho, gerado de config/landings.json. Sao <a> de verdade:
+       o crawler segue link, e e assim que ele descobre as paginas de nicho a
+       partir da raiz. -->
+  <nav class="nichos">
+{{NICHOS}}
+  </nav>
+
+  <footer class="foot">
+    <p>{{RODAPE}}</p>
+  </footer>
+
+</main>
+</body>
+</html>
