@@ -22,10 +22,17 @@ const WHATSAPP_LIMIT = 1024;
 /** JID (`5511...@s.whatsapp.net`, às vezes com `:device`) → só os dígitos. */
 const soDigitos = (jid: string): string => jid.split('@')[0]!.split(':')[0]!.replace(/\D/g, '');
 
-/** É o bot ou alguém da equipe? Então não é inscrito. */
-function ehDaCasa(jid: string, meuNumero: string): boolean {
+/**
+ * É o bot ou alguém da equipe? Então não é inscrito.
+ *
+ * Compara contra o id E o LID: o WhatsApp passou a identificar participante de
+ * grupo por LID (`<numero>@lid`), que NÃO é o telefone. Comparando só com o
+ * telefone, o bot deixava de ser reconhecido e cada grupo VAZIO voltava a
+ * contar 1 pessoa.
+ */
+function ehDaCasa(jid: string, nossos: Set<string>): boolean {
   const n = soDigitos(jid);
-  return n === meuNumero || config.admin.teamNumbers.includes(n);
+  return nossos.has(n) || config.admin.teamNumbers.includes(n);
 }
 
 export interface GroupStatus {
@@ -92,7 +99,11 @@ export async function buildGroupStatus(
   }
 
   const groupIds = [...new Set(escolhidos.flatMap((n) => n.groups))];
-  const meuNumero = soDigitos(sock.user?.id ?? '');
+  /* Todos os identificadores que somos nós. O `lid` existe porque o WhatsApp
+   * passou a usar LID na lista de participantes; sem ele o bot não se
+   * reconhece dentro do próprio grupo. */
+  const eu = sock.user as { id?: string; lid?: string } | undefined;
+  const nossos = new Set([soDigitos(eu?.id ?? ''), soDigitos(eu?.lid ?? '')].filter(Boolean));
 
   const groups: GroupStatus[] = [];
   for (const id of groupIds) {
@@ -106,9 +117,18 @@ export async function buildGroupStatus(
       members = meta.size ?? meta.participants?.length ?? 0;
       // Preferimos contar a LISTA (dá pra excluir quem é nosso) e só caímos no
       // `size - 1` quando ela não vem.
-      people = meta.participants?.length
-        ? meta.participants.filter((p) => !ehDaCasa(p.id, meuNumero)).length
-        : Math.max(0, members - 1);
+      /* `groupMetadata` só responde pra grupo em que o bot ESTÁ, então ele é
+       * sempre um dos participantes. Se o filtro não tirou ninguém, é porque
+       * não conseguimos nos reconhecer na lista (formato de id novo) — nesse
+       * caso descontamos 1 às cegas, que é a verdade que sabemos. Sem esse
+       * fallback, grupo vazio volta a contar 1 pessoa. */
+      const lista = meta.participants ?? [];
+      const filtrados = lista.filter((p) => !ehDaCasa(p.id, nossos)).length;
+      people = lista.length === 0
+        ? Math.max(0, members - 1)
+        : filtrados < lista.length
+          ? filtrados
+          : Math.max(0, members - 1);
     } catch (err) {
       logger.warn({ id, err: (err as Error).message }, '[grupos] Sem metadata.');
     }
