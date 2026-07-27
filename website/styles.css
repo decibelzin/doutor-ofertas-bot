@@ -185,7 +185,9 @@ body {
   letter-spacing: .1em;
   color: var(--gold);
 }
-.vagas::before { content: '⚡ '; }
+/* Sem raio: ⚡ é o vocabulário visual de disparo em massa e de conta pirata.
+   Não adicionava informação — a linha diz o que precisa dizer sozinha — e
+   adicionava textura de spam justamente onde a página precisa parecer sóbria. */
 
 .cta {
   width: 100%;
