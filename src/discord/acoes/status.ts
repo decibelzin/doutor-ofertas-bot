@@ -30,7 +30,9 @@ interface GroupsFile {
   updatedAt: string;
   join: string | null;
   totalMembers: number;
-  groups: { name: string; members: number; vacancies: number; full: boolean }[];
+  /** Ausente em groups.json gravado antes desse campo existir. */
+  totalPeople?: number;
+  groups: { name: string; members: number; people?: number; vacancies: number; full: boolean }[];
 }
 
 function lerGrupos(): { arquivo: string; dados: GroupsFile | null } {
@@ -48,6 +50,19 @@ function lerGrupos(): { arquivo: string; dados: GroupsFile | null } {
   } catch {
     return { arquivo, dados: null };
   }
+}
+
+/**
+ * Gente de verdade, sem contar o bot.
+ *
+ * `members` do Baileys inclui o próprio bot em cada grupo: 10 grupos vazios
+ * apareciam como "10 membros". Cai pro cálculo antigo em arquivo gravado antes
+ * do campo existir.
+ */
+function pessoas(g: GroupsFile): number {
+  if (typeof g.totalPeople === 'number') return g.totalPeople;
+  // groups.json antigo: desconta 1 (o bot) de cada grupo.
+  return g.groups.reduce((s, x) => s + (x.people ?? Math.max(0, x.members - 1)), 0);
 }
 
 async function sondarSite(): Promise<{ ok: boolean; detalhe: string }> {
@@ -117,7 +132,7 @@ export async function montarStatus(): Promise<EmbedBuilder> {
     {
       name: 'Grupos',
       value: grupos
-        ? `**${grupos.groups.length}** grupos · **${grupos.totalMembers}** membros\n` +
+        ? `**${grupos.groups.length}** grupos · **${pessoas(grupos)}** pessoas\n` +
           `Botão do site aponta pra: ${grupos.join ? '**ok**' : '**NENHUM**'}\n` +
           `Atualizado ${minutosAtras(new Date(grupos.updatedAt).getTime())}` +
           (grupoParado ? '\n⚠️ **parado — bot do WhatsApp caiu?**' : '')

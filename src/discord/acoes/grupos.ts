@@ -6,8 +6,11 @@ import { OURO, VERDE, VERMELHO, minutosAtras } from './comum';
 
 /** GRUPOS — o estado dos grupos de WhatsApp e pra onde o botão do site aponta. */
 
-interface Grupo { name: string; link: string | null; members: number; vacancies: number; full: boolean }
-interface GroupsFile { updatedAt: string; limit: number; join: string | null; totalMembers: number; groups: Grupo[] }
+interface Grupo { name: string; link: string | null; members: number; people?: number; vacancies: number; full: boolean }
+interface GroupsFile { updatedAt: string; limit: number; join: string | null; totalMembers: number; totalPeople?: number; groups: Grupo[] }
+
+/** Gente de verdade: `members` do Baileys conta o próprio bot em cada grupo. */
+const pessoasDo = (g: Grupo): number => g.people ?? Math.max(0, g.members - 1);
 
 /** Um groups.json por nicho: <site.dir>/<slug>/groups.json. */
 function lerTodos(): { slug: string; dados: GroupsFile }[] {
@@ -58,11 +61,12 @@ export function montarGrupos(): EmbedBuilder {
       const marca = g.link && g.link === dados.join ? '**→**' : '  ';
       const cheio = g.full ? ' 🔴 CHEIO' : '';
       const semLink = g.link ? '' : ' ⚠️ sem link (bot é admin?)';
-      return `${marca} \`${String(i + 1).padStart(2)}\` ${g.members} membros · ${g.vacancies} vagas${cheio}${semLink}`;
+      const p = pessoasDo(g);
+      return `${marca} \`${String(i + 1).padStart(2)}\` ${p === 0 ? '_vazio_' : `**${p}** pessoa${p > 1 ? 's' : ''}`}${cheio}${semLink}`;
     });
 
     e.addFields({
-      name: `${slug} — ${dados.totalMembers} membros em ${dados.groups.length} grupos`,
+      name: `${slug} — ${dados.totalPeople ?? dados.groups.reduce((a, g) => a + pessoasDo(g), 0)} pessoas em ${dados.groups.length} grupos`,
       value:
         linhas.join('\n').slice(0, 1000) +
         `\n\nBotão do site → ${proximo ? `grupo **${dados.groups.indexOf(proximo) + 1}**` : '**NENHUM com vaga**'}` +
@@ -71,6 +75,8 @@ export function montarGrupos(): EmbedBuilder {
     });
   }
 
-  e.setFooter({ text: '→ marca o grupo pra onde o botão da landing está mandando agora' });
+  e.setFooter({
+    text: '→ é pra onde o botão da landing manda agora · o próprio bot não entra na contagem',
+  });
   return e;
 }

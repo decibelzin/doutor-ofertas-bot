@@ -24,6 +24,14 @@ export interface GroupStatus {
   /** Link de convite (chat.whatsapp.com/…) ou null se não deu pra obter. */
   link: string | null;
   members: number;
+  /**
+   * Membros MENOS o próprio bot — o número de gente de verdade.
+   *
+   * `meta.size` do Baileys conta todos os participantes, e o bot é um deles.
+   * Um grupo "com 1 membro" é um grupo VAZIO, só com o bot dentro; relatar o
+   * bruto faz 10 grupos vazios parecerem 10 inscritos.
+   */
+  people: number;
   /** Vagas até o limite operacional (com margem). */
   vacancies: number;
   full: boolean;
@@ -36,6 +44,8 @@ export interface GroupsFile {
   /** Primeiro grupo com vaga — é pra cá que o botão do site aponta. */
   join: string | null;
   totalMembers: number;
+  /** Soma de `people`: o número que vale pra saber se o funil está trazendo gente. */
+  totalPeople: number;
   groups: GroupStatus[];
 }
 
@@ -91,7 +101,10 @@ export async function buildGroupStatus(
       logger.warn({ id, err: (err as Error).message }, '[grupos] Sem link de convite (o bot é admin?).');
     }
     const vacancies = Math.max(0, limit - members);
-    groups.push({ name, link, members, vacancies, full: vacancies === 0 });
+    // `groupMetadata` só responde pra grupo em que o bot está, então ele sempre
+    // é um dos participantes contados.
+    const people = Math.max(0, members - 1);
+    groups.push({ name, link, members, people, vacancies, full: vacancies === 0 });
   }
 
   // Ordena por menos cheio... não: mantém a ordem configurada e pega o PRIMEIRO
@@ -104,6 +117,7 @@ export async function buildGroupStatus(
     limit,
     join: next?.link ?? null,
     totalMembers: groups.reduce((s, g) => s + g.members, 0),
+    totalPeople: groups.reduce((s, g) => s + g.people, 0),
     groups,
   };
 }
@@ -143,7 +157,7 @@ export async function refreshGroupStatus(sock: WASocket): Promise<GroupsFile | n
       const data = await buildGroupStatus(sock);
       const file = writeGroupStatus(data);
       logger.info(
-        { grupos: data.groups.length, membros: data.totalMembers, proximo: data.join ? 'ok' : 'NENHUM', file },
+        { grupos: data.groups.length, pessoas: data.totalPeople, proximo: data.join ? 'ok' : 'NENHUM', file },
         '[grupos] Status atualizado pro site.'
       );
       return data;
@@ -163,7 +177,7 @@ export async function refreshGroupStatus(sock: WASocket): Promise<GroupsFile | n
           slug: landing.slug,
           nicho: landing.niche,
           grupos: data.groups.length,
-          membros: data.totalMembers,
+          pessoas: data.totalPeople,
           proximo: data.join ? 'ok' : 'NENHUM',
           file,
         },
