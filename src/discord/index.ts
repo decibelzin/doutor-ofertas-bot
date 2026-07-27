@@ -2,6 +2,8 @@ import { Client, GatewayIntentBits, REST, Routes, MessageFlags, type Interaction
 import { config } from '../config';
 import { logger } from '../logger';
 import * as funil from './commands/funil';
+import { BOTAO_ATUALIZAR } from './embeds/funil';
+import { atualizarPorMensagem, iniciarLoopPaineis } from './paineis';
 
 /**
  * BOT DO DISCORD — processo separado do bot do WhatsApp.
@@ -44,9 +46,31 @@ export async function iniciarDiscord(): Promise<Client> {
 
   client.once('clientReady', (c) => {
     logger.info({ usuario: c.user.tag, servidores: c.guilds.cache.size }, '[discord] Conectado.');
+    // Só depois de conectar: buscar canal/mensagem exige o client pronto.
+    iniciarLoopPaineis(c);
   });
 
   client.on('interactionCreate', async (interaction: Interaction) => {
+    // ── Botão "Atualizar" do painel ──────────────────────────────────────
+    if (interaction.isButton()) {
+      if (interaction.customId !== BOTAO_ATUALIZAR) return;
+      try {
+        // deferUpdate: o Discord exige resposta em 3s, e reler o log pode
+        // passar disso. Sem isso o botão mostra "interação falhou".
+        await interaction.deferUpdate();
+        const ok = await atualizarPorMensagem(interaction.client, interaction.message.id);
+        if (!ok) {
+          await interaction.followUp({
+            content: 'Esse painel não está mais registrado — rode `/funil canal:` de novo.',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      } catch (err) {
+        logger.error({ err: (err as Error).message }, '[discord] Falha no botão de atualizar.');
+      }
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
     const cmd = comandos.find((c) => c.data.name === interaction.commandName);
     if (!cmd) return;

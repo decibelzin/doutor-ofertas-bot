@@ -1,24 +1,34 @@
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  EmbedBuilder,
   MessageFlags,
+  ChannelType,
   type ChatInputCommandInteraction,
 } from 'discord.js';
-import { lerFunil, type FunilResumo } from '../../core/funnel';
+import { lerFunil } from '../../core/funnel';
+import { montarEmbedFunil } from '../embeds/funil';
+import { criarPainel } from '../paineis';
 import { config } from '../../config';
 import { logger } from '../../logger';
 
 /**
  * /funil — visitas, cliques e taxa de conversão da landing.
  *
+ *   /funil                  -> resposta efêmera, só pra você, agora
+ *   /funil canal:#metricas  -> painel fixo no canal, que se atualiza sozinho
+ *
  * Só administradores: `setDefaultMemberPermissions` faz o Discord esconder o
- * comando de quem não tem a permissão, então não é só uma checagem nossa —
- * quem não é admin nem vê o comando existir.
+ * comando de quem não tem a permissão — não é só uma checagem nossa.
  */
 export const data = new SlashCommandBuilder()
   .setName('funil')
   .setDescription('Visitas, cliques e taxa de conversão da landing')
+  .addChannelOption((o) =>
+    o
+      .setName('canal')
+      .setDescription('Cria um painel que se atualiza sozinho neste canal')
+      .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+  )
   .addIntegerOption((o) =>
     o
       .setName('dias')
@@ -29,81 +39,46 @@ export const data = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setDMPermission(false);
 
-const OURO = 0xe8b84b;
-const VERDE = 0x25d366;
-
-const pct = (n: number | null): string => (n === null ? '—' : `${n.toFixed(1)}%`);
-
-function montarEmbed(f: FunilResumo): EmbedBuilder {
-  const e = new EmbedBuilder()
-    .setColor(f.visitantes > 0 ? VERDE : OURO)
-    .setTitle(`Funil da landing — ${f.dias === 1 ? 'hoje' : `últimos ${f.dias} dias`}`)
-    .setURL('https://doutoroferta.com.br/perfumes')
-    .setTimestamp(new Date());
-
-  if (f.visitantes === 0 && f.cliques === 0) {
-    e.setDescription(
-      'Nenhuma visita registrada no período.\n' +
-        'Se você sabe que houve acesso, o log pode ter rotacionado ou o nginx ' +
-        'pode não estar gravando neste arquivo.'
-    );
-  } else {
-    e.addFields(
-      { name: 'Visitantes', value: `**${f.visitantes}**\n_IPs distintos_`, inline: true },
-      { name: 'Cliques no CTA', value: `**${f.cliquesUnicos}**\n_${f.cliques} no total_`, inline: true },
-      { name: 'Taxa de clique', value: `**${pct(f.taxaCliquePercent)}**`, inline: true }
-    );
-
-    if (f.origens.length) {
-      e.addFields({
-        name: 'De onde vieram',
-        value: f.origens.slice(0, 6).map((o) => `\`${String(o.visitas).padStart(4)}\` ${o.origem}`).join('\n'),
-      });
-    }
-    if (f.porNicho.length) {
-      e.addFields({
-        name: 'Cliques por nicho',
-        value: f.porNicho.map((n) => `\`${String(n.cliques).padStart(4)}\` ${n.nicho}`).join('\n'),
-        inline: true,
-      });
-    }
-    if (f.porDia.length > 1) {
-      // Últimos 10 dias: embed field tem teto de 1024 caracteres.
-      e.addFields({
-        name: 'Por dia',
-        value: f.porDia
-          .slice(-10)
-          .map((d) => `\`${d.dia}\` ${String(d.visitantes).padStart(3)} visitas · ${String(d.cliques).padStart(3)} cliques`)
-          .join('\n'),
-      });
-    }
-  }
-
-  const rodape = ['visitante = IP distinto; robôs filtrados'];
-  if (f.avisos.length) rodape.push(...f.avisos);
-  e.setFooter({ text: rodape.join(' · ').slice(0, 2048) });
-  return e;
-}
-
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   const dias = interaction.options.getInteger('dias') ?? 1;
+  const canal = interaction.options.getChannel('canal');
 
   // Ler e agregar o log pode passar dos 3s que o Discord dá pra responder.
-  // Efêmero: são dados de negócio e ninguém mais no canal precisa ver.
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const f = lerFunil(dias);
-    await interaction.editReply({ embeds: [montarEmbed(f)] });
+    if (!canal) {
+      await interaction.editReply({ embeds: [montarEmbedFunil(lerFunil(dias))] });
+      logger.info({ usuario: interaction.user.tag, dias }, '[discord] /funil consultado.');
+      return;
+    }
+
+    if (!interaction.guildId) throw new Error('Este comando só funciona dentro de um servidor.');
+
+    const { url, reaproveitado } = await criarPainel(interaction.client, {
+      guildId: interaction.guildId,
+      channelId: canal.id,
+      dias,
+      criadoPor: interaction.user.tag,
+    });
+
+    const min = config.discord.funilRefreshMinutes;
+    await interaction.editReply(
+      `${reaproveitado ? 'Painel atualizado' : 'Painel criado'} em <#${canal.id}> — ${url}\n` +
+        (min > 0
+          ? `Ele se atualiza sozinho a cada **${min} min**, e o botão **Atualizar** força na hora.`
+          : 'Atualização automática está desligada; use o botão **Atualizar**.') +
+        (reaproveitado ? '\n_Já existia um painel nesse canal, então reaproveitei em vez de criar outro._' : '')
+    );
     logger.info(
-      { usuario: interaction.user.tag, dias, visitantes: f.visitantes, cliques: f.cliques },
-      '[discord] /funil consultado.'
+      { usuario: interaction.user.tag, canal: canal.id, dias, reaproveitado },
+      '[discord] Painel do funil configurado.'
     );
   } catch (err) {
     const msg = (err as Error).message;
-    logger.error({ err: msg, dias }, '[discord] /funil falhou.');
+    logger.error({ err: msg, dias, canal: canal?.id }, '[discord] /funil falhou.');
     await interaction.editReply(
-      `Não consegui ler o funil: \`${msg}\`\n` +
+      `Não consegui: \`${msg}\`\n` +
         `Logs esperados em \`${config.site.logAcessos}\` e \`${config.site.logCliques}\`.`
     );
   }
