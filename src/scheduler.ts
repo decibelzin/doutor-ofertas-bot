@@ -9,6 +9,8 @@ import { resolvePreset } from './format/title';
 import { whenReady, getSocket } from './whatsapp/client';
 import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { setAlertSink, alertAuthDegraded } from './core/health';
+import { lerPausa } from './core/pausa';
+import { enviarAlertaDiscord } from './core/alerta-discord';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
@@ -29,6 +31,19 @@ function nowTz(): DateTime {
 export function isWithinWindow(): boolean {
   const h = nowTz().hour;
   return h >= config.schedule.startHour && h < config.schedule.endHour;
+}
+
+/**
+ * Freio de mão acionado do Discord (data/pausa.json).
+ *
+ * Vale inclusive pro `ignoreWindow` do post manual: pausa é parada dura, não
+ * "pare quando for conveniente". Pra postar na mão, retome antes.
+ */
+function pausado(contexto: string): boolean {
+  const p = lerPausa();
+  if (!p) return false;
+  logger.info({ contexto, por: p.por, desde: p.desde, ate: p.ate }, '[Scheduler] Pausado — não vou postar.');
+  return true;
 }
 
 /** Algum teto anti-ban (por hora / por dia) foi atingido? (global, entre todos os nichos) */
@@ -93,6 +108,7 @@ export async function postNiche(
     logger.debug({ niche: niche.name }, '[Scheduler] Fora da janela.');
     return;
   }
+  if (pausado(`oferta:${niche.name}`)) return;
   if (!ignoreWindow && capReached()) return;
   if (niche.groups.length === 0) return;
 
@@ -202,6 +218,7 @@ async function postCouponTick(): Promise<void> {
     logger.debug('[Scheduler] Cupom fora da janela.');
     return;
   }
+  if (pausado('cupom')) return;
   if (capReached()) return;
   const sock = await whenReady();
 
@@ -276,6 +293,7 @@ function scheduleCouponPost(opts: { immediate?: boolean } = {}): void {
  */
 async function announceTick(): Promise<void> {
   if (!isWithinWindow()) return; // não acorda ninguém fora do horário
+  if (pausado('anuncio-cupom')) return;
   const sock = await whenReady();
   const r = await announceNewCoupons(sock, {});
   if (r) {
@@ -361,13 +379,21 @@ export function startScheduler(): void {
     '[Scheduler] Iniciado.'
   );
 
-  // Alerta de saúde (cookie expirado) também no WhatsApp, se configurado.
-  if (config.admin.alertGroup) {
-    setAlertSink(async (msg) => {
+  /* Alerta de saúde (cookie expirado etc.).
+   *
+   * O sink é ligado SEMPRE. Antes ele só era instalado quando havia grupo de
+   * WhatsApp de admin configurado — e como esse campo estava vazio, todo
+   * alerta de degradação morria no log sem ninguém ver. Cada destino decide
+   * sozinho se está configurado. */
+  setAlertSink(async (msg, reason, detail) => {
+    // Discord primeiro: é webhook HTTP puro, então chega mesmo quando o que
+    // quebrou foi justamente a conexão do WhatsApp.
+    await enviarAlertaDiscord(reason, msg, detail);
+    if (config.admin.alertGroup) {
       const s = getSocket();
       if (s) await s.sendMessage(config.admin.alertGroup, { text: msg });
-    });
-  }
+    }
+  });
 
   for (const niche of niches) scheduleNiche(niche, { immediate: true });
   startCouponAutomation();

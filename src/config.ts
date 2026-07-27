@@ -103,6 +103,10 @@ export interface Config {
     // Servidor onde os comandos são registrados. Registro por guild aparece na
     // hora; o global leva até 1h pra propagar.
     guildId: string;
+    // Webhook onde caem os alertas de saúde. Webhook e não o bot: quem alerta é
+    // o processo do WhatsApp, e um POST HTTP chega mesmo se o bot do Discord
+    // estiver fora do ar. Vazio = só loga.
+    webhookAlertas: string;
   };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
@@ -213,6 +217,7 @@ export const config: Config = {
     token: process.env.DISCORD_TOKEN ?? '',
     clientId: process.env.DISCORD_CLIENT_ID ?? '',
     guildId: process.env.DISCORD_GUILD_ID ?? '',
+    webhookAlertas: process.env.DISCORD_WEBHOOK_ALERTAS ?? '',
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length

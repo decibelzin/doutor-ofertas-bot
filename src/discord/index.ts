@@ -2,6 +2,12 @@ import { Client, GatewayIntentBits, REST, Routes, MessageFlags, type Interaction
 import { config } from '../config';
 import { logger } from '../logger';
 import * as funil from './commands/funil';
+import * as painel from './commands/painel';
+import * as status from './commands/status';
+import * as grupos from './commands/grupos';
+import * as pausar from './commands/pausar';
+import * as retomar from './commands/retomar';
+import { tratarBotaoPainel } from './painel';
 
 /**
  * BOT DO DISCORD — processo separado do bot do WhatsApp.
@@ -12,11 +18,15 @@ import * as funil from './commands/funil';
  * dedup, formatação, link de afiliado — vai ser compartilhado quando as
  * ofertas passarem a sair também nos canais do servidor.
  *
- * Hoje só expõe /funil. Não pede intent privilegiada nenhuma: slash command
- * não precisa ler mensagem, então o bot roda com o mínimo de permissão.
+ * Expõe /painel (mensagem fixa com botões) e um slash command por ação:
+ * /status /funil /grupos /pausar /retomar. Painel e comando chamam a MESMA
+ * função de `acoes/` — o painel é conveniência, não uma segunda implementação.
+ *
+ * Não pede intent privilegiada nenhuma: slash command não precisa ler
+ * mensagem, então o bot roda com o mínimo de permissão possível.
  */
 
-const comandos = [funil];
+const comandos = [painel, status, funil, grupos, pausar, retomar];
 
 async function registrarComandos(): Promise<void> {
   const rest = new REST().setToken(config.discord.token);
@@ -47,6 +57,11 @@ export async function iniciarDiscord(): Promise<Client> {
   });
 
   client.on('interactionCreate', async (interaction: Interaction) => {
+    if (interaction.isButton()) {
+      // O painel responde por todos os botões `painel:*`.
+      if (await tratarBotaoPainel(interaction)) return;
+      return;
+    }
     if (!interaction.isChatInputCommand()) return;
     const cmd = comandos.find((c) => c.data.name === interaction.commandName);
     if (!cmd) return;

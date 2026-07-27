@@ -7,7 +7,15 @@ import { logger } from '../logger';
  * (ex.: mandar no WhatsApp), notifica. Throttled por motivo pra não spammar.
  */
 
-type AlertSink = (message: string) => void | Promise<void>;
+/**
+ * O sink recebe também `reason` e `detail` — sem eles o destino não consegue
+ * explicar o erro nem montar um embed decente; só repassaria a frase pronta.
+ */
+type AlertSink = (
+  message: string,
+  reason: string,
+  detail?: Record<string, unknown>
+) => void | Promise<void>;
 
 let sink: AlertSink | null = null;
 const lastAlertAt = new Map<string, number>();
@@ -32,7 +40,7 @@ export function alertAuthDegraded(reason: string, detail?: Record<string, unknow
 
   if (sink) {
     try {
-      void Promise.resolve(sink(msg)).catch((err) =>
+      void Promise.resolve(sink(msg, reason, detail)).catch((err) =>
         logger.warn({ err: (err as Error).message }, '[SAÚDE] Falha ao enviar alerta.')
       );
     } catch (err) {
