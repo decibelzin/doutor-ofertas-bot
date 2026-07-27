@@ -1,7 +1,7 @@
 # nginx - vhost de produção
 
-`doutoroferta.com.br.conf` é um **retrato** do que está rodando em
-`/etc/nginx/sites-available/doutoroferta.com.br` na VPS. Está aqui para não se
+`doutorofertas.com.br.conf` (oficial), `doutoroferta.com.br.conf` (aposentado, so 301) e `rotas.conf` (snippet compartilhado) sao um **retrato** do que está rodando em
+`/etc/nginx/` na VPS. Está aqui para não se
 perder junto com a máquina, e para as decisões ficarem revisáveis.
 
 **Não é aplicado por `npm run deploy`, de propósito.** A VPS também serve
