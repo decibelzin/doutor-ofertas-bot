@@ -1,0 +1,24 @@
+[Unit]
+Description=Doutor Ofertas - bot de ofertas de afiliado (WhatsApp)
+Documentation=https://github.com/decibelzin/doutor-ofertas-bot
+After=network-online.target
+Wants=network-online.target
+
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/doutor-ofertas-bot
+# O app carrega o .env sozinho (dotenv/config). Nao usar EnvironmentFile:
+# o systemd nao entende os comentarios e aspas desse arquivo.
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=10
+# Baileys reconecta sozinho; reinicio agressivo demais derruba a sessao.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=doutor-ofertas
+
+[Install]
+WantedBy=multi-user.target
