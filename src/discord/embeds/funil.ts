@@ -25,7 +25,9 @@ const hora = (d: Date): string =>
 export function montarEmbedFunil(f: FunilResumo, opts: { painel?: boolean } = {}): EmbedBuilder {
   const e = new EmbedBuilder()
     .setColor(f.visitantes > 0 ? VERDE : OURO)
-    .setTitle(`Funil da landing — ${f.dias === 1 ? 'hoje' : `últimos ${f.dias} dias`}`)
+    // "hoje" seria mentira: a janela é ROLANTE (agora − dias × 24h), não o dia
+    // do calendário. Às 15h, dias=1 cobre das 15h de ontem até agora.
+    .setTitle(`Funil da landing — ${f.dias === 1 ? 'últimas 24h' : `últimos ${f.dias} dias`}`)
     .setURL('https://doutoroferta.com.br/perfumes')
     .setTimestamp(new Date());
 

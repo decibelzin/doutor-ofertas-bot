@@ -138,7 +138,11 @@ const ordenado = (m: Map<string, number>): [string, number][] =>
   [...m.entries()].sort((a, b) => b[1] - a[1]);
 
 /**
- * Monta o funil dos últimos `dias` dias (1 = hoje até agora).
+ * Monta o funil de uma janela ROLANTE de `dias` × 24h a partir de agora.
+ *
+ * Rolante, e não dia do calendário, de propósito: um painel que zera à
+ * meia-noite parece quebrado às 9h da manhã. `dias = 1` é "últimas 24 horas",
+ * não "hoje desde a meia-noite" — a quebra `porDia` é que agrupa por data.
  */
 export function lerFunil(dias = 1): FunilResumo {
   const avisos: string[] = [];
