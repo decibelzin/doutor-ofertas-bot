@@ -116,7 +116,12 @@ export interface FunilResumo {
   cliquesUnicos: number;
   /** null quando não houve visita - evita dividir por zero e fingir 0%. */
   taxaCliquePercent: number | null;
-  origens: { origem: string; visitas: number }[];
+  /**
+   * Origem por REFERRER, em visitantes (IP único) - mesma unidade de
+   * `visitantes` e de `porFonte`. A soma pode passar do total: quem chegou
+   * duas vezes por caminhos diferentes conta nas duas origens.
+   */
+  origens: { origem: string; visitantes: number }[];
   porFonte: FunilFonte[];
   porNicho: { nicho: string; cliques: number }[];
   porDia: FunilDia[];
@@ -155,6 +160,23 @@ function origem(referrer: string): string {
 const FONTE = /[?&]f=([a-z0-9-]{1,16})(?:&|$)/;
 
 const fonte = (caminho: string): string => FONTE.exec(caminho)?.[1] ?? 'sem fonte';
+
+/**
+ * IPs únicos por chave.
+ *
+ * A unidade honesta pra "quantas PESSOAS" - `contar` responde "quantas linhas
+ * de log", que é outra coisa. Misturar as duas no mesmo painel foi bug de
+ * verdade: "De onde vieram" somava 40 (páginas) embaixo de "Visitantes 11".
+ */
+const unicosPor = (linhas: Linha[], chave: (l: Linha) => string): Map<string, Set<string>> => {
+  const m = new Map<string, Set<string>>();
+  for (const l of linhas) {
+    const k = chave(l);
+    if (!m.has(k)) m.set(k, new Set());
+    m.get(k)!.add(l.ip);
+  }
+  return m;
+};
 
 const contar = <T>(itens: T[], chave: (t: T) => string): Map<string, number> => {
   const m = new Map<string, number>();
@@ -195,17 +217,8 @@ export function lerFunil(dias = 1): FunilResumo {
      converteu 30%". Com quatro canais no ar ao mesmo tempo e um número só, não
      dá pra saber o que matar e o que dobrar - o funil vira placar, não bússola.
      Por IP único dos dois lados, senão a taxa mistura base diferente. */
-  const porFonteIps = (linhas: Linha[]): Map<string, Set<string>> => {
-    const m = new Map<string, Set<string>>();
-    for (const l of linhas) {
-      const f = fonte(l.caminho);
-      if (!m.has(f)) m.set(f, new Set());
-      m.get(f)!.add(l.ip);
-    }
-    return m;
-  };
-  const visitasFonte = porFonteIps(acessos);
-  const cliquesFonte = porFonteIps(cliques);
+  const visitasFonte = unicosPor(acessos, (l) => fonte(l.caminho));
+  const cliquesFonte = unicosPor(cliques, (l) => fonte(l.caminho));
   const porFonte: FunilFonte[] = [...new Set([...visitasFonte.keys(), ...cliquesFonte.keys()])]
     .map((f) => {
       const visitantes = visitasFonte.get(f)?.size ?? 0;
@@ -239,8 +252,9 @@ export function lerFunil(dias = 1): FunilResumo {
     cliques: cliques.length,
     cliquesUnicos: ipsClique.size,
     taxaCliquePercent: ipsVisita.size > 0 ? (ipsClique.size / ipsVisita.size) * 100 : null,
-    origens: ordenado(contar(acessos, (l) => origem(l.referrer)))
-      .map(([origem, visitas]) => ({ origem, visitas })),
+    origens: [...unicosPor(acessos, (l) => origem(l.referrer)).entries()]
+      .map(([origem, ips]) => ({ origem, visitantes: ips.size }))
+      .sort((a, b) => b.visitantes - a.visitantes),
     porFonte,
     porNicho: ordenado(
       contar(cliques, (l) => /[?&]n=([a-z0-9-]+)/.exec(l.caminho)?.[1] ?? 'sem nicho')
@@ -264,8 +278,8 @@ export function formatarFunil(f: FunilResumo): string {
   linha('TAXA DE CLIQUE', f.taxaCliquePercent === null ? '-' : `${f.taxaCliquePercent.toFixed(1)}%`);
 
   if (f.origens.length) {
-    L.push('', '  De onde vieram:');
-    for (const o of f.origens.slice(0, 8)) L.push(`    ${String(o.visitas).padStart(5)}  ${o.origem}`);
+    L.push('', '  De onde vieram (visitantes):');
+    for (const o of f.origens.slice(0, 8)) L.push(`    ${String(o.visitantes).padStart(5)}  ${o.origem}`);
   }
   if (f.porFonte.length) {
     L.push('', '  Por canal (?f=):');

@@ -35,7 +35,7 @@ export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
       e.addFields({
         name: 'De onde vieram',
         value: f.origens.slice(0, 6)
-          .map((o) => `\`${String(o.visitas).padStart(4)}\` ${o.origem}`).join('\n'),
+          .map((o) => `\`${String(o.visitantes).padStart(4)}\` ${o.origem}`).join('\n'),
       });
     }
     // Canal (?f=) vem ANTES do nicho: com vários canais no ar, é esta linha que
