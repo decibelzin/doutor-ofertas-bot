@@ -200,7 +200,15 @@ function tidy(s: string): string {
   return s
     .replace(FLUFF_TOKENS, ' ')
     .replace(/\s{2,}/g, ' ')
-    .replace(/^[\s,;.\--|]+|[\s,;.\--|]+$/g, '')
+    /* ⚠️ O hífen fica no FIM da classe de propósito. Já esteve escrito
+       `[\s,;.\--|]`, onde o `\-` seguido de `-|` virava um INTERVALO de U+002D
+       a U+007C - ou seja, todo dígito, todo A-Z, todo a-z e quase toda
+       pontuação. O efeito era comer as pontas do nome até bater num caractere
+       fora da faixa (um acento): "Trésor Lancôme" saía "ésor Lancô". E em
+       título sem acento a classe engolia a string inteira, o resultado vazio
+       era descartado e o cleanTitle caía no `?? raw` - então ele NUNCA limpou
+       nada, só parecia funcionar. */
+    .replace(/^[\s,;.|-]+|[\s,;.|-]+$/g, '')
     .trim();
 }
 
