@@ -78,6 +78,34 @@ export interface LandingsFile {
 
 const LANDINGS_FILE = path.resolve('config/landings.json');
 
+/**
+ * Origem pública do site, lida do config.
+ *
+ * Existe pra ninguém mais cravar o domínio no código: na primeira troca de
+ * domínio, cada lugar hardcoded vira um bug silencioso — o card apontando pro
+ * endereço velho, o /status sondando o site errado.
+ */
+export function baseUrlDoSite(): string {
+  try {
+    return loadLandings()?.baseUrl ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Hosts que são "nós" — inclui domínios antigos que ainda redirecionam. */
+export function nossosHosts(): string[] {
+  const base = baseUrlDoSite();
+  const host = base ? new URL(base).hostname.replace(/^www\./, '') : '';
+  return [host, ...DOMINIOS_ANTIGOS].filter(Boolean);
+}
+
+/**
+ * Domínios que já foram oficiais e hoje só redirecionam. Ficam aqui pra que
+ * tráfego vindo deles conte como navegação interna, não como origem externa.
+ */
+const DOMINIOS_ANTIGOS = ['doutoroferta.com.br'];
+
 /** Campos sem os quais a página sai quebrada. */
 const OBRIGATORIOS: (keyof Landing)[] = [
   'slug', 'niche', 'title', 'description', 'headline',

@@ -10,7 +10,7 @@
     "",
     "Depois de editar: npm run build-site"
   ],
-  "baseUrl": "https://doutoroferta.com.br",
+  "baseUrl": "https://doutorofertas.com.br",
   "default": "perfumes",
   "hub": {
     "title": "Doutor Ofertas - ofertas e cupons todo dia no WhatsApp",

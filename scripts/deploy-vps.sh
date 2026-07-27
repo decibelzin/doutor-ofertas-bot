@@ -66,7 +66,7 @@ for s in "${SERVICOS[@]}"; do
 done
 for p in /perfumes/ /perfumes/og.jpg /styles.css /perfumes/groups.json; do
   printf '   %s  <- %s\n' \
-    "$(curl -s -o /dev/null -w '%{http_code}' --resolve doutoroferta.com.br:443:127.0.0.1 --max-time 10 "https://doutoroferta.com.br$p")" "$p"
+    "$(curl -s -o /dev/null -w '%{http_code}' --resolve doutorofertas.com.br:443:127.0.0.1 --max-time 10 "https://doutorofertas.com.br$p")" "$p"
 done
 printf '   dashrp (nao pode ter quebrado): %s\n' \
   "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://dashrp.com.br)"

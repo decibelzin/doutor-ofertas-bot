@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import type { FunilResumo } from '../../core/funnel';
+import { baseUrlDoSite } from '../../core/landing';
 
 /** Embed do funil, usado pela resposta do /funil. */
 
@@ -14,7 +15,7 @@ export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
     // "hoje" seria mentira: a janela é ROLANTE (agora − dias × 24h), não o dia
     // do calendário. Às 15h, dias=1 cobre das 15h de ontem até agora.
     .setTitle(`Funil da landing - ${f.dias === 1 ? 'últimas 24h' : `últimos ${f.dias} dias`}`)
-    .setURL('https://doutoroferta.com.br/perfumes')
+    .setURL(`${baseUrlDoSite()}/perfumes`)
     .setTimestamp(new Date());
 
   if (f.visitantes === 0 && f.cliques === 0) {

@@ -5,4 +5,4 @@ Allow: /
 # /e e a rota do contador de cliques (responde 204, nao e conteudo).
 Disallow: /e
 
-Sitemap: https://doutoroferta.com.br/sitemap.xml
+Sitemap: https://doutorofertas.com.br/sitemap.xml

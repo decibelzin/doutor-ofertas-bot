@@ -3,6 +3,7 @@ import path from 'node:path';
 import { EmbedBuilder } from 'discord.js';
 import { config } from '../../config';
 import { lerPausa } from '../../core/pausa';
+import { baseUrlDoSite } from '../../core/landing';
 import { OURO, VERDE, VERMELHO, agora, minutosAtras } from './comum';
 
 /**
@@ -66,7 +67,7 @@ function pessoas(g: GroupsFile): number {
 }
 
 async function sondarSite(): Promise<{ ok: boolean; detalhe: string }> {
-  const url = 'https://doutoroferta.com.br/perfumes';
+  const url = `${baseUrlDoSite()}/perfumes`;
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);

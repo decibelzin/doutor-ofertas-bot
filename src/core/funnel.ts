@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import path from 'node:path';
 import { config } from '../config';
+import { nossosHosts } from './landing';
 import { logger } from '../logger';
 
 /**
@@ -122,7 +123,9 @@ function origem(referrer: string): string {
   try {
     const h = new URL(referrer).hostname.replace(/^www\./, '');
     // Auto-referência é navegação interna, não uma origem de tráfego.
-    return h.endsWith('doutoroferta.com.br') ? 'navegação no site' : h;
+    // Domínio antigo entra aqui também: ele redireciona pro oficial, então
+    // visita vinda dele é navegação interna, não origem externa de tráfego.
+    return nossosHosts().some((n) => h === n || h.endsWith(`.${n}`)) ? 'navegação no site' : h;
   } catch {
     return 'desconhecido';
   }
