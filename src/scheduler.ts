@@ -10,6 +10,7 @@ import { whenReady, getSocket } from './whatsapp/client';
 import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { setAlertSink, alertAuthDegraded } from './core/health';
 import { lerPausa } from './core/pausa';
+import { urlDaLanding } from './core/landing';
 import { enviarAlertaDiscord } from './core/alerta-discord';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
@@ -99,6 +100,9 @@ async function pickNicheDeal(niche: Niche): Promise<Deal | null> {
   return (fresh.length ? fresh : eligible)[0]!; // já vem ordenado por desconto
 }
 
+/** Rodadas já postadas nesta execução - só serve pra alternar o rodapé. */
+let rodadas = 0;
+
 /** Posta UMA oferta do nicho nos grupos dele. */
 export async function postNiche(
   niche: Niche,
@@ -126,10 +130,19 @@ export async function postNiche(
   const preset = resolvePreset(deal.title, deal.id);
   const image = await fetchDealImage(deal, preset?.imagem);
 
+  /* Rodapé de recrutamento a cada N RODADAS - decidido aqui, fora do laço, pra
+     valer igual em todos os grupos. Se fosse por grupo, o grupo 1 receberia
+     sempre e o 10 quase nunca. `f=zap` marca o canal no funil: é assim que dá
+     pra ver quanto tráfego o próprio encaminhamento gera. */
+  rodadas += 1;
+  const comRodape =
+    config.schedule.footerEvery > 0 && rodadas % config.schedule.footerEvery === 0;
+  const footerUrl = comRodape ? urlDaLanding(niche.name, 'zap') ?? undefined : undefined;
+
   const sock = await whenReady();
   for (let i = 0; i < niche.groups.length; i += 1) {
     const groupId = niche.groups[i]!;
-    const text = formatDeal(deal, { variant: i });
+    const text = formatDeal(deal, { variant: i, footerUrl });
     try {
       const msgId = await sendToGroup(sock, groupId, text, image);
       store.markPosted(deal, groupId, msgId);

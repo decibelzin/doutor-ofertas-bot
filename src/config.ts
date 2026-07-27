@@ -37,6 +37,16 @@ export interface Config {
     jitterMinutes: number;
     maxPostsPerHour: number;
     maxPostsPerDay: number | null;
+    /**
+     * Rodapé com o link da landing a cada N posts. 0 desliga.
+     *
+     * Não é 1 por padrão por dois motivos: a URL seria IDÊNTICA em ~90 posts/dia
+     * × 10 grupos (repetição de link é sinal de spam pro WhatsApp, e o número
+     * roda em Baileys, onde ban é permanente), e quem JÁ está no grupo leria a
+     * mesma chamada o dia inteiro. 3 preserva o ganho do encaminhamento sem
+     * virar outdoor. POST_FOOTER_EVERY=1 põe em todo post.
+     */
+    footerEvery: number;
   };
   dedup: {
     cooldownDays: number;
@@ -185,6 +195,7 @@ export const config: Config = {
     jitterMinutes: num(process.env.POST_JITTER_MINUTES, 3),
     maxPostsPerHour: num(process.env.MAX_POSTS_PER_HOUR, 8),
     maxPostsPerDay: process.env.MAX_POSTS_PER_DAY ? Number(process.env.MAX_POSTS_PER_DAY) : null,
+    footerEvery: num(process.env.POST_FOOTER_EVERY, 3),
   },
   dedup: {
     cooldownDays: num(process.env.DEDUP_COOLDOWN_DAYS, 3),

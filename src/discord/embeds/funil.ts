@@ -38,6 +38,22 @@ export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
           .map((o) => `\`${String(o.visitas).padStart(4)}\` ${o.origem}`).join('\n'),
       });
     }
+    // Canal (?f=) vem ANTES do nicho: com vários canais no ar, é esta linha que
+    // diz onde vale gastar o tempo do dia. "De onde vieram" (referrer) some em
+    // webview de app, então sozinho ele não responde isso.
+    if (f.porFonte.length) {
+      e.addFields({
+        name: 'Por canal',
+        value: f.porFonte
+          .slice(0, 6)
+          .map(
+            (x) =>
+              `\`${String(x.visitantes).padStart(4)}\` ${x.fonte} · ` +
+              `${x.cliquesUnicos} clique(s) · ${pct(x.taxaPercent)}`
+          )
+          .join('\n'),
+      });
+    }
     if (f.porNicho.length) {
       e.addFields({
         name: 'Cliques por nicho',

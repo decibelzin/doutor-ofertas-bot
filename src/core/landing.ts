@@ -93,6 +93,27 @@ export function baseUrlDoSite(): string {
   }
 }
 
+/**
+ * URL da landing do nicho, com o canal (`?f=`) marcado.
+ *
+ * Serve pro rodapé do post: quando alguém encaminha uma oferta pro amigo, o
+ * amigo recebe o perfume com desconto e — sem isso — NENHUMA forma de entrar
+ * no grupo. Cada encaminhamento é um anúncio já pago que se perde.
+ *
+ * Devolve null quando o nicho não tem landing (nada de rodapé apontando pra
+ * página que não existe).
+ */
+export function urlDaLanding(nicheName: string, fonte: string): string | null {
+  const base = baseUrlDoSite();
+  if (!base) return null;
+  try {
+    const slug = loadLandings()?.landings.find((l) => l.niche === nicheName)?.slug;
+    return slug ? `${base}/${slug}?f=${fonte}` : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Hosts que são "nós" — inclui domínios antigos que ainda redirecionam. */
 export function nossosHosts(): string[] {
   const base = baseUrlDoSite();

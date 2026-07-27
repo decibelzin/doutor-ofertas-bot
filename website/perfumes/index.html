@@ -165,6 +165,18 @@
     const copiar = document.getElementById('copiar');
     const ROTULO = label ? label.textContent : '';
 
+    /* ── Fonte da visita ──────────────────────────────────────────────────
+       `?f=<canal>` na URL (fb, pin, tg, zap...). E o unico sinal confiavel de
+       origem: o referrer some em webview de app e em clique dentro do
+       WhatsApp, entao "direto ou app" hoje engole quase tudo. Vai junto no
+       beacon pra o funil cruzar visita x clique POR CANAL - sem isso, quatro
+       canais ligados ao mesmo tempo viram um numero so.
+
+       Sanitizado de proposito: quem digita a URL escreve o que quiser, e o
+       log do nginx nao e lugar pra texto arbitrario. */
+    const bruto = new URLSearchParams(location.search).get('f') || '';
+    const fonte = /^[a-z0-9-]{1,16}$/.test(bruto) ? bruto : '';
+
     /* ── Clique ───────────────────────────────────────────────────────────
        O <a> continua valendo sozinho se o JS falhar. Quando o JS roda, ele
        navega no contexto do TOPO: o webview do Instagram/TikTok costuma
@@ -175,7 +187,8 @@
          junto pra dar pra comparar as landings entre si. */
       try {
         navigator.sendBeacon(
-          '/e?c=cta&n=perfumes&r=' + encodeURIComponent(document.referrer || 'direto')
+          '/e?c=cta&n=perfumes' + (fonte ? '&f=' + fonte : '') +
+            '&r=' + encodeURIComponent(document.referrer || 'direto')
         );
       } catch (e) { /* sendBeacon ausente: segue o clique normalmente */ }
 

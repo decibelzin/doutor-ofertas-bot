@@ -44,7 +44,10 @@ function formatPrice(value: number): string {
   });
 }
 
-export function formatDeal(deal: Deal, opts: { variant?: number } = {}): string {
+export function formatDeal(
+  deal: Deal,
+  opts: { variant?: number; footerUrl?: string } = {}
+): string {
   const variant = opts.variant ?? 0;
   const preset = resolvePreset(deal.title, deal.id);
   const name = preset?.nome ?? cleanTitle(deal.title);
@@ -77,6 +80,15 @@ export function formatDeal(deal: Deal, opts: { variant?: number } = {}): string 
   }
 
   blocks.push(`🛒 ${deal.affiliateUrl}`);
+
+  /* Rodapé de recrutamento (opcional - quem decide a frequência é o scheduler).
+     Escrito pra quem está DE FORA: quem já está no grupo pula a linha, quem
+     recebeu encaminhado descobre como entrar. Sem ele, encaminhar uma oferta -
+     que é o comportamento natural em grupo de promoção - não recruta ninguém:
+     o amigo recebe o perfume com desconto e nenhum caminho de volta. */
+  if (opts.footerUrl) {
+    blocks.push(`📲 Recebeu encaminhado? Oferta assim todo dia:\n${opts.footerUrl}`);
+  }
 
   // Uma linha em branco entre CADA bloco (respiro/premium).
   return blocks.join('\n\n');

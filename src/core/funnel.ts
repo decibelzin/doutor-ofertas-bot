@@ -98,6 +98,15 @@ export interface FunilDia {
   cliques: number;
 }
 
+/** Um canal de divulgação (`?f=`) com visita e clique cruzados. */
+export interface FunilFonte {
+  fonte: string;
+  visitantes: number;
+  cliquesUnicos: number;
+  /** null quando o canal tem clique mas nenhuma visita casada - não fingir 0%. */
+  taxaPercent: number | null;
+}
+
 export interface FunilResumo {
   dias: number;
   desde: Date;
@@ -108,6 +117,7 @@ export interface FunilResumo {
   /** null quando não houve visita - evita dividir por zero e fingir 0%. */
   taxaCliquePercent: number | null;
   origens: { origem: string; visitas: number }[];
+  porFonte: FunilFonte[];
   porNicho: { nicho: string; cliques: number }[];
   porDia: FunilDia[];
   /** Avisos pro consumidor mostrar (ex.: log ausente). */
@@ -130,6 +140,21 @@ function origem(referrer: string): string {
     return 'desconhecido';
   }
 }
+
+/**
+ * Canal que trouxe a visita, lido do `?f=` da URL.
+ *
+ * Existe porque `origem()` não resolve o problema real: clique vindo do
+ * WhatsApp, do Instagram ou de um QR chega SEM referrer e cai inteiro em
+ * "direto ou app". Ou seja, justo os canais que a gente divulga são os que o
+ * referrer não enxerga. O `?f=` é posto por nós no link publicado, então é o
+ * único sinal que sobrevive ao webview.
+ *
+ * Só aceita o formato que a landing sanitiza - isto aqui é texto de fora.
+ */
+const FONTE = /[?&]f=([a-z0-9-]{1,16})(?:&|$)/;
+
+const fonte = (caminho: string): string => FONTE.exec(caminho)?.[1] ?? 'sem fonte';
 
 const contar = <T>(itens: T[], chave: (t: T) => string): Map<string, number> => {
   const m = new Map<string, number>();
@@ -165,6 +190,35 @@ export function lerFunil(dias = 1): FunilResumo {
   const ipsVisita = new Set(acessos.map((l) => l.ip));
   const ipsClique = new Set(cliques.map((l) => l.ip));
 
+  /* Visita e clique cruzados POR CANAL. É o que transforma "chegaram 60
+     pessoas" em "o Pinterest trouxe 40 e converteu 5%, o Facebook trouxe 20 e
+     converteu 30%". Com quatro canais no ar ao mesmo tempo e um número só, não
+     dá pra saber o que matar e o que dobrar - o funil vira placar, não bússola.
+     Por IP único dos dois lados, senão a taxa mistura base diferente. */
+  const porFonteIps = (linhas: Linha[]): Map<string, Set<string>> => {
+    const m = new Map<string, Set<string>>();
+    for (const l of linhas) {
+      const f = fonte(l.caminho);
+      if (!m.has(f)) m.set(f, new Set());
+      m.get(f)!.add(l.ip);
+    }
+    return m;
+  };
+  const visitasFonte = porFonteIps(acessos);
+  const cliquesFonte = porFonteIps(cliques);
+  const porFonte: FunilFonte[] = [...new Set([...visitasFonte.keys(), ...cliquesFonte.keys()])]
+    .map((f) => {
+      const visitantes = visitasFonte.get(f)?.size ?? 0;
+      const cliquesUnicos = cliquesFonte.get(f)?.size ?? 0;
+      return {
+        fonte: f,
+        visitantes,
+        cliquesUnicos,
+        taxaPercent: visitantes > 0 ? (cliquesUnicos / visitantes) * 100 : null,
+      };
+    })
+    .sort((a, b) => b.visitantes - a.visitantes || b.cliquesUnicos - a.cliquesUnicos);
+
   const porDia = new Map<string, { v: Set<string>; c: number }>();
   for (const l of acessos) {
     const d = diaSP(l.quando);
@@ -187,6 +241,7 @@ export function lerFunil(dias = 1): FunilResumo {
     taxaCliquePercent: ipsVisita.size > 0 ? (ipsClique.size / ipsVisita.size) * 100 : null,
     origens: ordenado(contar(acessos, (l) => origem(l.referrer)))
       .map(([origem, visitas]) => ({ origem, visitas })),
+    porFonte,
     porNicho: ordenado(
       contar(cliques, (l) => /[?&]n=([a-z0-9-]+)/.exec(l.caminho)?.[1] ?? 'sem nicho')
     ).map(([nicho, cliques]) => ({ nicho, cliques })),
@@ -211,6 +266,16 @@ export function formatarFunil(f: FunilResumo): string {
   if (f.origens.length) {
     L.push('', '  De onde vieram:');
     for (const o of f.origens.slice(0, 8)) L.push(`    ${String(o.visitas).padStart(5)}  ${o.origem}`);
+  }
+  if (f.porFonte.length) {
+    L.push('', '  Por canal (?f=):');
+    for (const x of f.porFonte.slice(0, 10)) {
+      const taxa = x.taxaPercent === null ? '     -' : `${x.taxaPercent.toFixed(1)}%`.padStart(6);
+      L.push(
+        `    ${String(x.visitantes).padStart(5)} visitantes  ` +
+          `${String(x.cliquesUnicos).padStart(4)} cliques  ${taxa}  ${x.fonte}`
+      );
+    }
   }
   if (f.porNicho.length) {
     L.push('', '  Cliques por nicho:');
