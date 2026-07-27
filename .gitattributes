@@ -12,3 +12,7 @@
 *.jpg binary
 *.webp binary
 *.ico binary
+
+# Arquivo de verificacao do Google Search Console: e servido como esta, sem
+# conversao de fim de linha. O Google compara byte a byte.
+google*.html -text
