@@ -40,6 +40,7 @@ export interface Landing {
   highlight: string;
   apoio: string;
   marcas: string[];
+  /** Linha acima do botão. Vazio = não renderiza o bloco. */
   turma: string;
   nota: string;
   rodape: string;
@@ -63,7 +64,7 @@ const LANDINGS_FILE = path.resolve('config/landings.json');
 /** Campos sem os quais a página sai quebrada. */
 const OBRIGATORIOS: (keyof Landing)[] = [
   'slug', 'niche', 'title', 'description', 'headline',
-  'highlight', 'apoio', 'turma', 'nota', 'rodape', 'fallbackInvite',
+  'highlight', 'apoio', 'nota', 'rodape', 'fallbackInvite',
 ];
 
 /**
@@ -98,6 +99,7 @@ export function loadLandings(): LandingsFile | null {
       throw new Error(`config/landings.json: landing "${l.slug}" sem og.linhas (a arte 1200x630 precisa do texto).`);
     }
     l.marcas = Array.isArray(l.marcas) ? l.marcas : [];
+    l.turma = typeof l.turma === 'string' ? l.turma : '';
   }
 
   const slugs = landings.map((l) => l.slug);

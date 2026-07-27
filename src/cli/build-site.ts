@@ -234,7 +234,9 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
     HEADLINE_HIGHLIGHT: escapeHtml(landing.highlight),
     APOIO: escapeHtml(landing.apoio),
     MARCAS: escapeHtml(landing.marcas.join(' · ')),
-    TURMA: escapeHtml(landing.turma),
+    BLOCO_TURMA: landing.turma.trim()
+      ? `    <p class="vagas">${escapeHtml(landing.turma)}</p>`
+      : '',
     NOTA: escapeHtml(landing.nota),
     RODAPE: escapeHtml(landing.rodape),
     FALLBACK_INVITE: escapeHtml(landing.fallbackInvite),
