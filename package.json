@@ -28,7 +28,8 @@
     "deploy": "ssh root@168.231.89.180 \"bash /srv/doutor-ofertas-bot/scripts/deploy-vps.sh\"",
     "funil": "tsx src/cli/funil.ts",
     "funil:vps": "ssh root@168.231.89.180 \"cd /srv/doutor-ofertas-bot && npx tsx src/cli/funil.ts\"",
-    "discord": "tsx src/discord/index.ts"
+    "discord": "tsx src/discord/index.ts",
+    "build-pins": "tsx src/cli/build-pins.ts"
   },
   "engines": {
     "node": ">=20"

@@ -36,7 +36,7 @@ export function formatMoney(value: number): string {
 }
 
 /** Preço "premium": some com o ",00" quando é redondo (R$ 199 em vez de R$ 199,00). */
-function formatPrice(value: number): string {
+export function formatPrice(value: number): string {
   const isRound = Number.isInteger(value);
   return Number(value).toLocaleString('pt-BR', {
     minimumFractionDigits: isRound ? 0 : 2,

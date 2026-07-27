@@ -6,6 +6,10 @@ import { loadLandings, type Landing, type LandingsFile } from '../core/landing';
 import { config } from '../config';
 import { logger } from '../logger';
 import { writeFileAtomic } from '../util/atomic';
+import {
+  BG, GOLD, GREEN, TEXT, MUTED,
+  ajustaCorpo, estimaLargura, logoRedondo, textoSvg,
+} from '../site/arte';
 
 /**
  * GERADOR DO SITE - uma página estática por nicho.
@@ -43,15 +47,6 @@ function urlDoCss(): string {
 
 const TEMPLATE = path.resolve('src/site/landing.template.html');
 const TEMPLATE_HUB = path.resolve('src/site/hub.template.html');
-/** Arte em alta pro card; cai pro JPG servido se a original não estiver aqui. */
-const LOGO_FONTE = ['assets/logo-original.png', 'website/assets/logo.jpg'];
-
-// ── Cores (espelham as custom properties de website/styles.css) ────────────
-const BG = '#0a0a0b';
-const GOLD = '#e8b84b';
-const GREEN = '#25d366';
-const TEXT = '#e5e2e3';
-const MUTED = '#9b8f7c';
 
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -75,57 +70,6 @@ const CX = 300;          // centro do logo
 const LOGO = 300;        // diâmetro do logo no card
 const COL_X = 560;       // início da coluna de texto
 const COL_W = W - 56 - COL_X;
-
-/**
- * Largura média de um caractere em CAIXA ALTA, relativa ao corpo da fonte.
- * Uma por família: Anton/Impact são condensadas e cabem quase 30% mais texto
- * que Arial Bold no mesmo corpo - usar um fator só fazia o texto em Arial
- * vazar da arte.
- *
- * Serve só pra ESCOLHER o corpo; o `textLength` é a trava real, então um erro
- * de estimativa aperta o texto em vez de deixá-lo vazar.
- */
-const CHAR_W = { condensada: 0.47, arial: 0.62 } as const;
-type Familia = keyof typeof CHAR_W;
-
-const FONTE: Record<Familia, string> = {
-  condensada: 'Anton, Impact, sans-serif',
-  arial: 'Arial, Helvetica, sans-serif',
-};
-
-const estimaLargura = (texto: string, corpo: number, familia: Familia): number =>
-  texto.length * corpo * CHAR_W[familia];
-
-/** Maior corpo (par) em que todas as linhas cabem em `largura`. */
-function ajustaCorpo(linhas: string[], largura: number, familia: Familia, max: number, min: number): number {
-  let corpo = max;
-  while (corpo > min && Math.max(...linhas.map((l) => estimaLargura(l, corpo, familia))) > largura) corpo -= 2;
-  return corpo;
-}
-
-const escapeXml = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-
-interface TextoOpts {
-  corpo: number;
-  cor: string;
-  familia: Familia;
-  largura: number;
-  /** Só pra pílula: centraliza no x informado. */
-  centro?: boolean;
-  negrito?: boolean;
-}
-
-/** <text> que nunca ultrapassa `largura`, custe uma leve condensação. */
-function textoSvg(texto: string, x: number, y: number, o: TextoOpts): string {
-  const trava =
-    estimaLargura(texto, o.corpo, o.familia) > o.largura
-      ? ` textLength="${Math.round(o.largura)}" lengthAdjust="spacingAndGlyphs"`
-      : '';
-  const ancora = o.centro ? ' text-anchor="middle"' : '';
-  const peso = o.negrito ? ' font-weight="bold"' : '';
-  return `<text x="${Math.round(x)}" y="${Math.round(y)}"${ancora} font-family="${FONTE[o.familia]}" font-size="${o.corpo}"${peso} fill="${o.cor}"${trava}>${escapeXml(texto)}</text>`;
-}
 
 async function geraOg(landing: Landing, destino: string): Promise<void> {
   const { linhas, destaque = -1, pilula = 'GRUPO GRÁTIS NO WHATSAPP' } = landing.og;
@@ -178,18 +122,7 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
   })}
 </svg>`;
 
-  const fonte = LOGO_FONTE.map((p) => path.resolve(p)).find((p) => fs.existsSync(p));
-  if (!fonte) throw new Error(`Nenhuma arte de logo encontrada (procurei: ${LOGO_FONTE.join(', ')}).`);
-
-  // Recorte circular: máscara alfa aplicada por dest-in sobre o logo redimensionado.
-  const mascara = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${LOGO}" height="${LOGO}"><circle cx="${LOGO / 2}" cy="${LOGO / 2}" r="${LOGO / 2}" fill="#fff"/></svg>`
-  );
-  const logoRedondo = await sharp(fonte)
-    .resize(LOGO, LOGO, { fit: 'cover' })
-    .composite([{ input: mascara, blend: 'dest-in' }])
-    .png()
-    .toBuffer();
+  const logo = await logoRedondo(LOGO);
 
   /* JPEG e não PNG: a arte é fotográfica (o mascote), então o PNG ficava em
      ~190 KB pra render igual. O WhatsApp é conservador com o peso do og:image
@@ -198,7 +131,7 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
      caixa alta e o dourado fiquem com borda suja, que é o defeito típico do
      JPEG padrão (4:2:0) em cima de tipografia. */
   await sharp(Buffer.from(svg))
-    .composite([{ input: logoRedondo, left: CX - LOGO / 2, top: Math.round(H / 2 - LOGO / 2) }])
+    .composite([{ input: logo, left: CX - LOGO / 2, top: Math.round(H / 2 - LOGO / 2) }])
     .jpeg({ quality: 88, progressive: true, chromaSubsampling: '4:4:4', mozjpeg: true })
     .toFile(destino);
 }

@@ -11,9 +11,10 @@ import { sendToGroup, fetchDealImage } from './whatsapp/sender';
 import { setAlertSink, alertAuthDegraded } from './core/health';
 import { lerPausa } from './core/pausa';
 import { urlDaLanding } from './core/landing';
+import { isKnownPerfume } from './core/quality';
 import { enviarAlertaDiscord } from './core/alerta-discord';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
-import { couponsEnabled, isPerfumeProduct } from './providers/mercadolivre/coupons';
+import { couponsEnabled } from './providers/mercadolivre/coupons';
 import { refreshCouponCache, runCouponPost, couponCacheAgeMs } from './core/coupon-runner';
 import { runPublicCouponPost, runCodeCouponPost } from './core/public-coupon-runner';
 import { announceNewCoupons } from './core/coupon-announcer';
@@ -63,16 +64,6 @@ function capReached(): boolean {
     }
   }
   return false;
-}
-
-/**
- * É um perfume POSTÁVEL? Aceita perfume de verdade (keyword/marca - INCLUI
- * árabes e nicho fora do banco Fragrantica, ex.: Lattafa/Armaf/Al Wataniah/
- * French Avenue) e corta maquiagem/cabelo. Antes o gate era só `isInBank`, que
- * cortava justamente o segmento quente que os concorrentes postam.
- */
-function isKnownPerfume(deal: Deal): boolean {
-  return isPerfumeProduct(deal.title) || resolvePreset(deal.title, deal.id) !== null;
 }
 
 /**

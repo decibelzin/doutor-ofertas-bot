@@ -16,3 +16,6 @@ config/presets.json
 # Versionar isso faz o `git pull` do deploy conflitar com a escrita do bot.
 website/groups.json
 website/*/groups.json
+
+# Pins gerados pro Pinterest: artefato descartavel, regerado por `npm run build-pins`.
+pins/
