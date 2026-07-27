@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { loadLandings, type Landing, type LandingsFile } from '../core/landing';
 import { config } from '../config';
@@ -22,6 +23,23 @@ import { writeFileAtomic } from '../util/atomic';
  * O groups.json de cada pasta NÃO é gerado aqui - quem escreve é o bot, a cada
  * SITE_REFRESH_MINUTES (ver src/core/group-status.ts).
  */
+
+/**
+ * URL do CSS com impressao digital do conteudo: /styles.css?v=<hash>.
+ *
+ * O nginx serve o CSS com `expires 1h`, entao sem isso uma correcao de estilo
+ * levava ate uma hora pra chegar em quem ja tinha visitado - e a pagina ficava
+ * com HTML novo e CSS velho, que e pior que os dois velhos. Com o hash na URL,
+ * mudou o arquivo, mudou o endereco, e o cache antigo deixa de ser consultado.
+ */
+function urlDoCss(): string {
+  try {
+    const css = fs.readFileSync(path.resolve(config.site.dir, 'styles.css'));
+    return `/styles.css?v=${crypto.createHash('sha1').update(css).digest('hex').slice(0, 8)}`;
+  } catch {
+    return '/styles.css';
+  }
+}
 
 const TEMPLATE = path.resolve('src/site/landing.template.html');
 const TEMPLATE_HUB = path.resolve('src/site/hub.template.html');
@@ -243,6 +261,7 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
     FALLBACK_INVITE: escapeHtml(landing.fallbackInvite),
     SLUG: landing.slug,
     SCHEMA: jsonLd(cfg, landing, pageUrl),
+    CSS_URL: urlDoCss(),
   });
 
   const aviso = `<!-- GERADO por \`npm run build-site\`. NÃO edite à mão.
@@ -434,6 +453,7 @@ function geraHub(cfg: LandingsFile, raiz: string, tplHub: string): void {
     OG_IMAGE: `${cfg.baseUrl}/${cfg.default}/og.jpg`,
     SCHEMA: schema,
     NICHOS: nichos,
+    CSS_URL: urlDoCss(),
   });
 
   const aviso = `<!-- GERADO por \`npm run build-site\`. NÃO edite à mão.
