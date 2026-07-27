@@ -32,8 +32,11 @@ cliques=$(juntar "$CLIQUES" | grep -E "\[($filtro)" | grep -vEi "$ROBOS" || true
 PAGINA='GET /[a-z0-9-]+/? HTTP'
 paginas=$(echo "$acessos"  | grep -cE "$PAGINA")
 visitantes=$(echo "$acessos" | grep -E "$PAGINA" | awk '{print $1}' | sort -u | grep -c .)
-n_cliques=$(echo "$cliques" | grep -c 'GET /e')
-cliques_unicos=$(echo "$cliques" | grep 'GET /e' | awk '{print $1}' | sort -u | grep -c .)
+# navigator.sendBeacon manda POST, nao GET — procurar so por "GET /e" contava
+# zero e ainda batia com os curl de teste, que sao GET. Aceita os dois metodos.
+CLIQUE='"(GET|POST) /e'
+n_cliques=$(echo "$cliques" | grep -cE "$CLIQUE")
+cliques_unicos=$(echo "$cliques" | grep -E "$CLIQUE" | awk '{print $1}' | sort -u | grep -c .)
 
 echo
 echo "FUNIL — últimos $DIAS dia(s)"
