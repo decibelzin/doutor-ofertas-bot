@@ -9,26 +9,35 @@ front**. Onde uma decisão tem motivo não óbvio, o motivo está escrito.
 
 ---
 
-## Existem DOIS sistemas de cupom, e eles não se parecem
+## Existem TRÊS fontes de cupom, e elas não se parecem
 
-| | Cupons **públicos** | Cupons de **vendedor** |
-|---|---|---|
-| Quem emite | o próprio Mercado Livre | o lojista |
-| Onde aparece | `mercadolivre.com.br/cupons` | painel de afiliado |
-| Como usa | comprador ativa o código | aplicado **automaticamente** no checkout |
-| Vale pra | qualquer pessoa | quem entra pelo link |
-| Dificuldade | **baixa** — uma chamada JSON | alta — 3 chamadas encadeadas + raspagem |
-| Tem código digitável | sim (com um truque) | **não**, e não precisa |
+| | **A.** Cupons públicos do ML | **B.** Cupons de vendedor | **C.** Agregadores de terceiros |
+|---|---|---|---|
+| Quem emite | o Mercado Livre | o lojista | o ML (campanha de site inteiro) |
+| Onde se capta | API JSON do `/cupons` | painel de afiliado | Pelando e similares |
+| **Precisa de login** | **sim** (cookie) | **sim** (cookie + csrf) | **não** ⭐ |
+| Como usa | comprador ativa | automático no checkout | comprador **digita** no carrinho |
+| Dificuldade | baixa — 1 chamada JSON | alta — 3 chamadas + raspagem | baixa — raspar 4 páginas |
+| Código digitável | sim (com um truque) | não, e não precisa | **sim** |
+| Escopo | categorias/lojas | produtos de 1 vendedor | **site inteiro** |
 
-**Comece pelos públicos.** São os que os canais concorrentes postam como "CUPOM RELÂMPAGO",
-saem prontos em JSON, e resolvem 90% do caso de uso. O caminho de vendedor só vale a pena pra
-fazer "desconto duplo" (produto já em promoção + cupom da mesma loja), e custa muito mais.
+**Se for começar por um só, comece pelo C.** Não precisa de conta, não precisa de cookie, não
+quebra quando a sessão expira — e é de onde saem os códigos de site inteiro (`ALLSITE25`,
+`TODOSITE25`, `MELIOFFHJ`) que os canais concorrentes postam como "cupom relâmpago". Esses
+códigos **não existem em nenhum endpoint da conta de afiliado**; descobrimos isso do jeito
+difícil, procurando por eles na API e não achando nada.
+
+O caminho A é o próximo em custo-benefício. O B só vale pra "desconto duplo" (produto já em
+promoção + cupom da mesma loja) e custa muito mais que os outros dois somados.
 
 ---
 
 ## Autenticação: um cookie, e ele expira
 
-As duas rotas exigem **cookie de sessão logada** do Mercado Livre. Não existe API key.
+> Vale só para os caminhos **A** e **B**. O caminho **C** (agregadores) é página pública — pule
+> esta seção se for começar por ele.
+
+As duas rotas do ML exigem **cookie de sessão logada**. Não existe API key.
 
 Como pegar:
 
@@ -47,7 +56,7 @@ requisições do painel de afiliado (`/afiliados/...`) na mesma aba Network.
 
 ---
 
-## Caminho A — Cupons públicos (recomendado)
+## Caminho A — Cupons públicos do ML
 
 ### A.1. Catálogo completo, paginado
 
@@ -235,6 +244,87 @@ GET /coupon-terms?coupon_id=<id>
 
 ---
 
+## Caminho C — Agregadores de terceiros (o mais fácil, sem login)
+
+Os códigos de **site inteiro** do ML não aparecem em endpoint nenhum da conta de afiliado. Eles
+são campanhas que o ML distribui via sites de cupom. É de lá que dá pra captá-los — e como são
+páginas públicas, **não precisa de cookie, conta nem csrf**.
+
+### As quatro fontes
+
+| Site | URL | Como o código está no HTML |
+|---|---|---|
+| Pelando | `pelando.com.br/cupons-de-descontos/mercado-livre` | atributo `data-copy-code` |
+| Descontos Top | `descontostop.com/loja/cupom-desconto-mercado-livre/` | atributo `data-code` |
+| Thiago Rodrigo | `thiagorodrigo.com.br/cupom-desconto-mercado-livre/` | atributo `data-full-code` |
+| Melhores Cartões | `melhorescartoes.com.br` | **tabela** `REGRA \| CUPOM \| LINK` |
+
+Três deles guardam o código num **atributo de dados** — basta um seletor CSS, não precisa parsear
+texto:
+
+```js
+// Pelando: cada botão "copiar" carrega o código no próprio atributo
+$('[data-copy-code]').each((_, el) => codigos.push($(el).attr('data-copy-code')));
+```
+
+O quarto é diferente e vale saber: **o Melhores Cartões publica numa página datada, que muda
+todo dia**. A URL fixa é só a home; o fluxo tem que achar o link mais recente que casa um padrão
+e seguir:
+
+```js
+discoverLink: /cupons?-mercado-livre[a-z0-9-]*\.html$/i
+```
+
+Em n8n isso é um HTTP Request na home → extrair `href` que casa o regex → segundo HTTP Request
+na página encontrada → parsear a tabela.
+
+### Filtrar lixo: nem todo `data-code` é cupom do ML
+
+```js
+function codigoPlausivel(code, nomeDoSite) {
+  if (!/^[A-Z0-9]{4,24}$/.test(code)) return false;      // hash/token não passa
+  if (code.includes(nomeDoSite.toUpperCase())) return false; // "PELANDO250" é cupom DELES
+  return /[A-Z]/.test(code);                              // só número não é campanha
+}
+```
+
+A segunda linha é a que importa: os agregadores publicam **cupons próprios** na mesma listagem.
+Sem esse filtro você posta o cupom do Pelando achando que é do Mercado Livre.
+
+### A ideia que faz esse caminho funcionar: confirmação cruzada
+
+Fonte de terceiro erra — publica código vencido, inventa, deixa expirado no ar. A defesa é não
+confiar em nenhuma isoladamente:
+
+```js
+// Mesmo código visto em N sites → sources = [site1, site2, ...]
+// 2+ fontes independentes = confiança alta
+const confiaveis = cupons.filter((c) => c.sources.length >= 2);
+
+// Ordena por confirmação primeiro, valor depois
+cupons.sort((a, b) =>
+  b.sources.length - a.sources.length ||
+  (b.amountOff ?? (b.percentOff ?? 0) * 2) - (a.amountOff ?? (a.percentOff ?? 0) * 2)
+);
+```
+
+Junte os quatro sites, agrupe por código, e conte em quantos ele apareceu. **Poste só o que tem
+2 ou mais.** Um código que só um site tem é provavelmente velho ou errado.
+
+O `(percentOff ?? 0) * 2` é só uma heurística pra comparar "20% OFF" com "R$ 20 OFF" na mesma
+escala — ajuste ao seu gosto.
+
+### O que extrair da descrição
+
+Os agregadores escrevem coisas como `"R$20 off em Compras Acima de 199"`. Vale parsear pra ter os
+campos separados, porque a mensagem final fica muito melhor com eles: **percentual**, **valor
+fixo**, **compra mínima** e **teto de desconto**.
+
+> ⚠️ **A validade que aparece é do agregador, não do ML.** Ele pode estar desatualizado. Sempre
+> poste as condições junto e não prometa prazo como se fosse oficial.
+
+---
+
 ## Link de afiliado (sem isso não há comissão)
 
 O ML **não tem API de geração de link**. O método é anexar sua etiqueta na URL do produto:
@@ -258,8 +348,34 @@ cookie + csrf. É opcional — o link longo com os parâmetros funciona e não d
 
 ## Fluxo sugerido em n8n
 
+### Comece por este — caminho C, sem login
+
 ```
 [Schedule Trigger]  a cada 1–2h
+        ↓
+[HTTP Request] ×4   as quatro páginas de agregador (User-Agent de browser)
+                    ⤷ melhorescartoes: 1º a home, extrai o link datado, 2º a página
+        ↓
+[HTML Extract]      pega os atributos: data-copy-code | data-code | data-full-code
+                    (melhorescartoes: parseia a tabela REGRA | CUPOM)
+        ↓
+[Code]  codigoPlausivel()  — descarta hash e o cupom do próprio agregador
+        ↓
+[Code]  agrupa por código e conta em quantos sites apareceu → sources[]
+        ↓
+[Filter]  sources.length >= 2        ⭐ confirmação cruzada
+        ↓
+[Code]  dedup contra o que já foi postado (guarde o código + data)
+        ↓
+[Code]  monta a mensagem (código, desconto, mínimo, condições)
+        ↓
+[Discord / WhatsApp]
+```
+
+### Depois, se quiser cupom por categoria — caminho A
+
+```
+[Schedule Trigger]
         ↓
 [HTTP Request]  GET .../filtered?page=1&special_coupon=true&origin=main
                 headers: User-Agent, Accept, Accept-Language, Cookie
@@ -270,28 +386,31 @@ cookie + csrf. É opcional — o link longo com os parâmetros funciona e não d
         ↓
 [Code]  filtro de perfumaria (domainId + keyword − exclusão)
         ↓
-[Code]  dedup por campaignId contra o que já foi postado
-        ↓
-[Code]  monta a mensagem (título, código, mínimo, validade, link)
+[Code]  dedup por campaignId
         ↓
 [Discord / WhatsApp]
 ```
 
-**Guarde estado.** Sem dedup por `campaignId`, o fluxo repõe os mesmos cupons a cada execução.
-Um arquivo, uma tabela ou um nó de storage do n8n resolve — guarde `campaignId` + data.
+**Guarde estado.** Sem dedup, o fluxo repõe os mesmos cupons a cada execução. Um arquivo, uma
+tabela ou um nó de storage do n8n resolve — guarde o identificador (`code` ou `campaignId`) + data.
 
-**Vá devagar.** Toda chamada é tráfego autenticado da *sua* sessão. Varredura agressiva derruba o
-cookie e pode marcar a conta. No caminho B, pacing lento é obrigatório, não recomendação.
+**Vá devagar nos caminhos A e B.** Toda chamada é tráfego autenticado da *sua* sessão; varredura
+agressiva derruba o cookie e pode marcar a conta. No caminho C o risco é outro: os agregadores
+podem bloquear por volume — mande `User-Agent` de browser e não bata de minuto em minuto.
 
 ---
 
 ## Resumo do que vale saber antes de começar
 
-1. **Comece pelos cupons públicos.** Uma chamada, JSON limpo, resolve quase tudo.
-2. **`special_coupon=true`** é o único jeito de obter código digitável.
-3. **Cookie expirado falha em silêncio** — `200` com lista vazia. Monitore isso.
-4. **`domainId: MLB-PERFUMES`** é o melhor classificador; keyword é o plano B.
-5. **Lista de exclusão não é opcional** — sem ela você posta batom como perfume.
-6. **Só `page` funciona** na paginação do painel; o resto é ignorado pelo servidor.
-7. **A raspagem também precisa do cookie**, senão devolve página vazia com `200`.
-8. **Sem `matt_word` o link não gera comissão**, e nada avisa.
+1. **Comece pelos agregadores (caminho C).** Sem login, sem cookie pra expirar, e é de onde saem
+   os códigos de site inteiro que os concorrentes postam.
+2. **Confirmação cruzada é o que torna terceiro confiável** — poste só código visto em 2+ sites.
+3. **Filtre o cupom do próprio agregador** (`PELANDO250` e afins), senão você divulga o
+   concorrente achando que é do ML.
+4. **`special_coupon=true`** é o único jeito de obter código digitável na API do ML.
+5. **Cookie expirado falha em silêncio** — `200` com lista vazia. Monitore isso.
+6. **`domainId: MLB-PERFUMES`** é o melhor classificador; keyword é o plano B.
+7. **Lista de exclusão não é opcional** — sem ela você posta batom como perfume.
+8. **Só `page` funciona** na paginação do painel; o resto é ignorado pelo servidor.
+9. **A raspagem do caminho B também precisa do cookie**, senão devolve página vazia com `200`.
+10. **Sem `matt_word` o link não gera comissão**, e nada avisa.
