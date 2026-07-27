@@ -26,7 +26,9 @@
     "group-status": "tsx src/cli/group-status.ts",
     "build-site": "tsx src/cli/build-site.ts",
     "deploy": "ssh root@168.231.89.180 \"bash /srv/doutor-ofertas-bot/scripts/deploy-vps.sh\"",
-    "funil": "ssh root@168.231.89.180 \"bash /srv/doutor-ofertas-bot/scripts/funil.sh\""
+    "funil": "tsx src/cli/funil.ts",
+    "funil:vps": "ssh root@168.231.89.180 \"cd /srv/doutor-ofertas-bot && npx tsx src/cli/funil.ts\"",
+    "discord": "tsx src/discord/index.ts"
   },
   "engines": {
     "node": ">=20"
@@ -35,6 +37,7 @@
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.9",
     "cheerio": "^1.2.0",
+    "discord.js": "^14.27.0",
     "dotenv": "^16.4.7",
     "luxon": "^3.5.0",
     "pino": "^9.6.0",

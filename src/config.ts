@@ -87,10 +87,22 @@ export interface Config {
     // pasta servida). Ex.: /var/www/doutorofertas/groups.json
     // LEGADO: só usado quando não há config/landings.json (site de nicho único).
     groupsFile: string;
+    // Logs do nginx que alimentam o funil (visitas e cliques no CTA).
+    logAcessos: string;
+    logCliques: string;
     // Teto OPERACIONAL por grupo (folga sobre os 1024 do WhatsApp, evita corrida).
     groupLimit: number;
     // De quanto em quanto tempo atualizar o status dos grupos (min). 0 = desliga.
     refreshMinutes: number;
+  };
+  discord: {
+    // Token do bot. Vazio = o serviço do Discord nem sobe.
+    token: string;
+    // ID da aplicação (usado pra registrar os slash commands).
+    clientId: string;
+    // Servidor onde os comandos são registrados. Registro por guild aparece na
+    // hora; o global leva até 1h pra propagar.
+    guildId: string;
   };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
@@ -194,6 +206,13 @@ export const config: Config = {
     groupsFile: process.env.SITE_GROUPS_FILE ?? './website/groups.json',
     groupLimit: num(process.env.SITE_GROUP_LIMIT, 1000),
     refreshMinutes: num(process.env.SITE_REFRESH_MINUTES, 15),
+    logAcessos: process.env.SITE_LOG_ACESSOS ?? '/var/log/nginx/doutoroferta-acessos.log',
+    logCliques: process.env.SITE_LOG_CLIQUES ?? '/var/log/nginx/doutoroferta-cliques.log',
+  },
+  discord: {
+    token: process.env.DISCORD_TOKEN ?? '',
+    clientId: process.env.DISCORD_CLIENT_ID ?? '',
+    guildId: process.env.DISCORD_GUILD_ID ?? '',
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length

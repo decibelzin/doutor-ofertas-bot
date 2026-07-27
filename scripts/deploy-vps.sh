@@ -11,6 +11,9 @@ set -euo pipefail
 
 REPO=/srv/doutor-ofertas-bot
 SERVICO=doutor-ofertas
+# Processos separados de propósito: um erro no Discord não pode derrubar a
+# sessão do Baileys, que é frágil e cara de recuperar.
+SERVICOS=(doutor-ofertas doutor-ofertas-discord)
 
 cd "$REPO"
 
@@ -38,9 +41,14 @@ fi
 if [ "$(git rev-parse HEAD:src 2>/dev/null || echo vazio)" != "$antes_src" ]; then
   echo "→ src mudou: build + restart"
   npm run build
-  systemctl restart "$SERVICO"
+  for s in "${SERVICOS[@]}"; do
+    # Serviço pode ainda não existir (ex.: o do Discord antes do primeiro setup).
+    if systemctl list-unit-files "$s.service" --no-legend | grep -q .; then
+      systemctl restart "$s" && echo "   reiniciado: $s"
+    fi
+  done
 else
-  echo "→ src intacto: landing atualizada sem tocar no bot"
+  echo "→ src intacto: landing atualizada sem tocar nos bots"
 fi
 
 # O nginx serve por caminho: www-data precisa ATRAVESSAR as pastas (755) e LER
@@ -53,7 +61,9 @@ find "$REPO/website" -type f -exec chmod 644 {} +
 
 echo
 echo "→ conferindo"
-printf '   servico: %s\n' "$(systemctl is-active "$SERVICO")"
+for s in "${SERVICOS[@]}"; do
+  printf '   %-24s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || echo 'nao instalado')"
+done
 for p in /perfumes/ /perfumes/og.jpg /styles.css /perfumes/groups.json; do
   printf '   %s  <- %s\n' \
     "$(curl -s -o /dev/null -w '%{http_code}' --resolve doutoroferta.com.br:443:127.0.0.1 --max-time 10 "https://doutoroferta.com.br$p")" "$p"
