@@ -1,6 +1,4 @@
 <!doctype html>
-<!-- GERADO por `npm run build-site`. NÃO edite à mão.
-     Conteúdo: config/landings.json · Estrutura: src/site/landing.template.html -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -30,6 +28,39 @@
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="canonical" href="https://doutoroferta.com.br/perfumes/">
+
+<!-- Dado estruturado: diz ao Google que "Doutor Ofertas" e ESTE dominio sao a
+     mesma entidade. E o sinal mais direto pra busca por nome de marca, e nao
+     acrescenta uma palavra visivel na tela. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://doutoroferta.com.br/#organizacao",
+      "name": "Doutor Ofertas",
+      "url": "https://doutoroferta.com.br/",
+      "logo": "https://doutoroferta.com.br/assets/logo.jpg",
+      "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis."
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://doutoroferta.com.br/perfumes/",
+      "url": "https://doutoroferta.com.br/perfumes/",
+      "name": "Doutor Ofertas - Perfume árabe e importado até 70% OFF",
+      "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.",
+      "inLanguage": "pt-BR",
+      "isPartOf": {
+        "@id": "https://doutoroferta.com.br/#organizacao"
+      },
+      "publisher": {
+        "@id": "https://doutoroferta.com.br/#organizacao"
+      }
+    }
+  ]
+}
+</script>
 <link rel="icon" href="/assets/favicon.png">
 
 <!-- ⚠️ Caminhos ABSOLUTOS (com / na frente), nao relativos.

@@ -241,6 +241,7 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
     RODAPE: escapeHtml(landing.rodape),
     FALLBACK_INVITE: escapeHtml(landing.fallbackInvite),
     SLUG: landing.slug,
+    SCHEMA: jsonLd(cfg, landing, pageUrl),
   });
 
   const aviso = `<!-- GERADO por \`npm run build-site\`. NÃO edite à mão.
@@ -254,6 +255,89 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
   conferConvite(landing, dir);
 
   logger.info({ slug: landing.slug, url: pageUrl }, '[site] Landing gerada.');
+}
+
+/**
+ * JSON-LD de Organization, igual em todas as páginas e com o MESMO `@id`.
+ *
+ * Repetir de propósito: o `@id` faz o Google fundir as ocorrências numa
+ * entidade só, então cada página nova reforça a associação "Doutor Ofertas =
+ * este domínio" em vez de criar uma marca nova. É o sinal mais direto pra
+ * busca por nome, e não acrescenta uma palavra visível na tela.
+ */
+function jsonLd(cfg: LandingsFile, landing: Landing, pageUrl: string): string {
+  const org = `${cfg.baseUrl}/#organizacao`;
+  const dados = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': org,
+        name: 'Doutor Ofertas',
+        url: `${cfg.baseUrl}/`,
+        logo: `${cfg.baseUrl}/assets/logo.jpg`,
+        description: landing.description,
+      },
+      {
+        '@type': 'WebPage',
+        '@id': pageUrl,
+        url: pageUrl,
+        name: landing.title,
+        description: landing.description,
+        inLanguage: 'pt-BR',
+        isPartOf: { '@id': org },
+        publisher: { '@id': org },
+      },
+    ],
+  };
+  // </script> dentro de JSON quebraria o bloco; escapar a barra é o padrão.
+  return `<script type="application/ld+json">
+${JSON.stringify(dados, null, 2).replace(/</g, '\u003c')}
+</script>`;
+}
+
+/**
+ * sitemap.xml a partir das landings — some a necessidade de lembrar de
+ * atualizar quando entrar um nicho novo.
+ *
+ * O Google acha página seguindo link de outro site. Como ninguém linka pra cá
+ * ainda, o sitemap é o substituto dos links que não existem.
+ */
+function geraSitemap(cfg: LandingsFile, raiz: string, hoje: string): void {
+  const urls = cfg.landings
+    .map((l) => `  <url>
+    <loc>${cfg.baseUrl}/${l.slug}/</loc>
+    <lastmod>${hoje}</lastmod>
+  </url>`)
+    .join('\n');
+  writeFileAtomic(
+    path.join(raiz, 'sitemap.xml'),
+    `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`
+  );
+  logger.info({ urls: cfg.landings.length }, '[site] sitemap.xml gerado.');
+}
+
+/** robots.txt: libera tudo e diz onde está o sitemap. */
+function geraRobots(cfg: LandingsFile, raiz: string): void {
+  writeFileAtomic(
+    path.join(raiz, 'robots.txt'),
+    [
+      '# Gerado por `npm run build-site`. Nao edite a mao.',
+      'User-agent: *',
+      'Allow: /',
+      '',
+      '# /e e a rota do contador de cliques (responde 204, nao e conteudo).',
+      'Disallow: /e',
+      '',
+      `Sitemap: ${cfg.baseUrl}/sitemap.xml`,
+      '',
+    ].join('\n')
+  );
+  logger.info('[site] robots.txt gerado.');
 }
 
 /** A raiz não é destino de anúncio: só encaminha quem chega sem nicho. */
@@ -289,6 +373,8 @@ async function main(): Promise<void> {
 
   for (const landing of cfg.landings) await geraLanding(cfg, landing, tpl, raiz);
   geraRaiz(cfg, raiz);
+  geraSitemap(cfg, raiz, new Date().toISOString().slice(0, 10));
+  geraRobots(cfg, raiz);
 
   console.log(`\n✓ ${cfg.landings.length} landing(s) em ${raiz}`);
   for (const l of cfg.landings) console.log(`   ${cfg.baseUrl}/${l.slug}/`);
