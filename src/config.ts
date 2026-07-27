@@ -78,6 +78,12 @@ export interface Config {
   admin: {
     // Grupo/chat JID que recebe alertas de saúde (ex.: cookie expirado). Vazio = só loga.
     alertGroup: string;
+    /**
+     * Números da equipe (só dígitos, separados por vírgula) que NÃO contam como
+     * inscritos. Sem isso, você mesmo dentro do grupo aparece como público —
+     * com poucos membros, isso distorce a métrica em dezenas por cento.
+     */
+    teamNumbers: string[];
   };
   site: {
     // Raiz servida pelo nginx. Cada nicho vira uma pasta: <dir>/<slug>/.
@@ -204,6 +210,7 @@ export const config: Config = {
   },
   admin: {
     alertGroup: process.env.ADMIN_ALERT_GROUP ?? '',
+    teamNumbers: list(process.env.TEAM_NUMBERS).map((n) => n.replace(/\D/g, '')).filter(Boolean),
   },
   site: {
     dir: process.env.SITE_DIR ?? path.dirname(process.env.SITE_GROUPS_FILE ?? './website/groups.json'),

@@ -19,17 +19,28 @@ import { writeFileAtomic } from '../util/atomic';
 /** Teto do WhatsApp por grupo. */
 const WHATSAPP_LIMIT = 1024;
 
+/** JID (`5511...@s.whatsapp.net`, às vezes com `:device`) → só os dígitos. */
+const soDigitos = (jid: string): string => jid.split('@')[0]!.split(':')[0]!.replace(/\D/g, '');
+
+/** É o bot ou alguém da equipe? Então não é inscrito. */
+function ehDaCasa(jid: string, meuNumero: string): boolean {
+  const n = soDigitos(jid);
+  return n === meuNumero || config.admin.teamNumbers.includes(n);
+}
+
 export interface GroupStatus {
   name: string;
   /** Link de convite (chat.whatsapp.com/…) ou null se não deu pra obter. */
   link: string | null;
   members: number;
   /**
-   * Membros MENOS o próprio bot — o número de gente de verdade.
+   * INSCRITOS de verdade: participantes menos o bot e menos os números da
+   * equipe (TEAM_NUMBERS).
    *
-   * `meta.size` do Baileys conta todos os participantes, e o bot é um deles.
-   * Um grupo "com 1 membro" é um grupo VAZIO, só com o bot dentro; relatar o
-   * bruto faz 10 grupos vazios parecerem 10 inscritos.
+   * `meta.size` conta todos os participantes e o bot é um deles — relatar o
+   * bruto fazia 10 grupos VAZIOS parecerem 10 inscritos. E quem opera também
+   * costuma estar dentro do grupo, então some junto: com poucos membros, cada
+   * número da equipe distorce a métrica em dezenas por cento.
    */
   people: number;
   /** Vagas até o limite operacional (com margem). */
@@ -81,16 +92,23 @@ export async function buildGroupStatus(
   }
 
   const groupIds = [...new Set(escolhidos.flatMap((n) => n.groups))];
+  const meuNumero = soDigitos(sock.user?.id ?? '');
 
   const groups: GroupStatus[] = [];
   for (const id of groupIds) {
     let name = id;
     let members = 0;
+    let people = 0;
     let link: string | null = null;
     try {
       const meta = await sock.groupMetadata(id);
       name = meta.subject ?? id;
       members = meta.size ?? meta.participants?.length ?? 0;
+      // Preferimos contar a LISTA (dá pra excluir quem é nosso) e só caímos no
+      // `size - 1` quando ela não vem.
+      people = meta.participants?.length
+        ? meta.participants.filter((p) => !ehDaCasa(p.id, meuNumero)).length
+        : Math.max(0, members - 1);
     } catch (err) {
       logger.warn({ id, err: (err as Error).message }, '[grupos] Sem metadata.');
     }
@@ -101,9 +119,6 @@ export async function buildGroupStatus(
       logger.warn({ id, err: (err as Error).message }, '[grupos] Sem link de convite (o bot é admin?).');
     }
     const vacancies = Math.max(0, limit - members);
-    // `groupMetadata` só responde pra grupo em que o bot está, então ele sempre
-    // é um dos participantes contados.
-    const people = Math.max(0, members - 1);
     groups.push({ name, link, members, people, vacancies, full: vacancies === 0 });
   }
 
