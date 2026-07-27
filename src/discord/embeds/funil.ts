@@ -1,28 +1,14 @@
-import {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import type { FunilResumo } from '../../core/funnel';
-import { config } from '../../config';
 
-/**
- * Embed do funil, usado nos dois lugares: na resposta efêmera do /funil e no
- * painel que se atualiza sozinho. Um render só — senão os dois divergem.
- */
-
-export const BOTAO_ATUALIZAR = 'funil:atualizar';
+/** Embed do funil, usado pela resposta do /funil. */
 
 const OURO = 0xe8b84b;
 const VERDE = 0x25d366;
 
 const pct = (n: number | null): string => (n === null ? '—' : `${n.toFixed(1)}%`);
 
-const hora = (d: Date): string =>
-  d.toLocaleTimeString('pt-BR', { timeZone: config.timezone, hour: '2-digit', minute: '2-digit' });
-
-export function montarEmbedFunil(f: FunilResumo, opts: { painel?: boolean } = {}): EmbedBuilder {
+export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
   const e = new EmbedBuilder()
     .setColor(f.visitantes > 0 ? VERDE : OURO)
     // "hoje" seria mentira: a janela é ROLANTE (agora − dias × 24h), não o dia
@@ -70,18 +56,7 @@ export function montarEmbedFunil(f: FunilResumo, opts: { painel?: boolean } = {}
   }
 
   const rodape = ['visitante = IP distinto; robôs filtrados'];
-  if (opts.painel) rodape.push(`atualizado ${hora(new Date())}`);
   if (f.avisos.length) rodape.push(...f.avisos);
   e.setFooter({ text: rodape.join(' · ').slice(0, 2048) });
   return e;
-}
-
-export function linhaBotoes(): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(BOTAO_ATUALIZAR)
-      .setLabel('Atualizar')
-      .setEmoji('🔄')
-      .setStyle(ButtonStyle.Secondary)
-  );
 }

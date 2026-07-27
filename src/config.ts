@@ -103,9 +103,6 @@ export interface Config {
     // Servidor onde os comandos são registrados. Registro por guild aparece na
     // hora; o global leva até 1h pra propagar.
     guildId: string;
-    // De quanto em quanto tempo o painel do funil se reescreve. 0 = desliga
-    // (fica só o botão Atualizar).
-    funilRefreshMinutes: number;
   };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
@@ -216,7 +213,6 @@ export const config: Config = {
     token: process.env.DISCORD_TOKEN ?? '',
     clientId: process.env.DISCORD_CLIENT_ID ?? '',
     guildId: process.env.DISCORD_GUILD_ID ?? '',
-    funilRefreshMinutes: num(process.env.DISCORD_FUNIL_REFRESH_MINUTES, 30),
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length
