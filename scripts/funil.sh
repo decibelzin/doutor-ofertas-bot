@@ -7,7 +7,10 @@
 # é IP distinto — não é perfeito (celular trocando de rede conta duas vezes,
 # gente atrás do mesmo NAT conta uma), mas é estável o bastante pra comparar
 # um dia com o outro, que é o que importa.
-set -euo pipefail
+# SEM `set -e` de propósito. Num relatório, "não achou nada" é resultado válido,
+# e todo `grep` sem resultado devolve 1 — com -e o script morria calado antes do
+# cabeçalho, em vez de imprimir zeros. `pipefail` fica de fora pelo mesmo motivo.
+set -u
 
 DIAS="${1:-1}"
 ACESSOS=/var/log/nginx/doutoroferta-acessos.log
@@ -26,10 +29,11 @@ ROBOS='bot|crawler|spider|facebookexternalhit|WhatsApp|Discordbot|Twitterbot|cur
 acessos=$(juntar "$ACESSOS" | grep -E "\[($filtro)" | grep -vEi "$ROBOS" || true)
 cliques=$(juntar "$CLIQUES" | grep -E "\[($filtro)" | grep -vEi "$ROBOS" || true)
 
-paginas=$(echo "$acessos" | grep -cE 'GET /[a-z0-9-]+/? HTTP' || true)
-visitantes=$(echo "$acessos" | grep -E 'GET /[a-z0-9-]+/? HTTP' | awk '{print $1}' | sort -u | wc -l)
-n_cliques=$(echo "$cliques" | grep -c 'GET /e' || true)
-cliques_unicos=$(echo "$cliques" | awk '{print $1}' | sort -u | grep -c . || true)
+PAGINA='GET /[a-z0-9-]+/? HTTP'
+paginas=$(echo "$acessos"  | grep -cE "$PAGINA")
+visitantes=$(echo "$acessos" | grep -E "$PAGINA" | awk '{print $1}' | sort -u | grep -c .)
+n_cliques=$(echo "$cliques" | grep -c 'GET /e')
+cliques_unicos=$(echo "$cliques" | grep 'GET /e' | awk '{print $1}' | sort -u | grep -c .)
 
 echo
 echo "FUNIL — últimos $DIAS dia(s)"
