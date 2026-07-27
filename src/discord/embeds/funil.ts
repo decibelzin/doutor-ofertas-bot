@@ -6,14 +6,14 @@ import type { FunilResumo } from '../../core/funnel';
 const OURO = 0xe8b84b;
 const VERDE = 0x25d366;
 
-const pct = (n: number | null): string => (n === null ? '—' : `${n.toFixed(1)}%`);
+const pct = (n: number | null): string => (n === null ? '-' : `${n.toFixed(1)}%`);
 
 export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
   const e = new EmbedBuilder()
     .setColor(f.visitantes > 0 ? VERDE : OURO)
     // "hoje" seria mentira: a janela é ROLANTE (agora − dias × 24h), não o dia
     // do calendário. Às 15h, dias=1 cobre das 15h de ontem até agora.
-    .setTitle(`Funil da landing — ${f.dias === 1 ? 'últimas 24h' : `últimos ${f.dias} dias`}`)
+    .setTitle(`Funil da landing - ${f.dias === 1 ? 'últimas 24h' : `últimos ${f.dias} dias`}`)
     .setURL('https://doutoroferta.com.br/perfumes')
     .setTimestamp(new Date());
 

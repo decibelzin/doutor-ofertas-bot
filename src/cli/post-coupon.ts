@@ -1,6 +1,6 @@
 /**
  * Posta um CUPOM RELÂMPAGO em todos os grupos dos nichos, mencionando @all
- * (notifica todo mundo) — igual os canais concorrentes fazem pra reengajar.
+ * (notifica todo mundo) - igual os canais concorrentes fazem pra reengajar.
  *
  * Use com MODERAÇÃO (1x por período): @all frequente irrita e arrisca ban.
  *
@@ -42,7 +42,7 @@ async function main(): Promise<void> {
   if (config.coupon.bannerPath && fs.existsSync(config.coupon.bannerPath)) {
     banner = fs.readFileSync(config.coupon.bannerPath);
   } else if (config.coupon.bannerPath) {
-    logger.warn({ path: config.coupon.bannerPath }, '[post-coupon] Banner não encontrado — enviando só texto.');
+    logger.warn({ path: config.coupon.bannerPath }, '[post-coupon] Banner não encontrado - enviando só texto.');
   }
 
   await connectWhatsApp();

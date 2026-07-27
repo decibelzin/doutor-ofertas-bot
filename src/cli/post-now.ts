@@ -1,5 +1,5 @@
 /**
- * Posta UMA oferta real agora, ignorando a janela de horário — pra você ver a
+ * Posta UMA oferta real agora, ignorando a janela de horário - pra você ver a
  * mensagem chegando no grupo sem esperar o agendador.
  *
  *   npm run post-now

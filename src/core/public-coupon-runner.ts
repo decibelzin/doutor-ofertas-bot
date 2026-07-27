@@ -22,10 +22,10 @@ import type { Deal } from './deal';
 /**
  * Posta PERFUME + CUPOM PÚBLICO do ML (o "cupom relâmpago" que os concorrentes
  * mandam). O cupom é do próprio ML (vale pra qualquer comprador) e o cliente o
- * ATIVA no app/site — por isso a mensagem manda ativar, sem prometer preço final.
+ * ATIVA no app/site - por isso a mensagem manda ativar, sem prometer preço final.
  *
  * Casamento cupom → produto:
- *  1º por ID elegível (itemIds do cupom) presente no nosso pool — casamento exato;
+ *  1º por ID elegível (itemIds do cupom) presente no nosso pool - casamento exato;
  *  2º senão, pelo título do perfume elegível (o card do cupom traz alt_text).
  * Sem produto casado no pool, não posta (não anuncia o que não temos link).
  */
@@ -100,7 +100,7 @@ export interface CodeCouponPostResult {
 }
 
 /**
- * Escolhe (cupom COM CÓDIGO, perfume elegível) — o formato "cupom relâmpago"
+ * Escolhe (cupom COM CÓDIGO, perfume elegível) - o formato "cupom relâmpago"
  * dos concorrentes. Raspa a listing de elegíveis do cupom e fica com o perfume
  * de maior desconto ainda postável.
  */

@@ -8,12 +8,12 @@ import type { Deal } from '../../core/deal';
 /**
  * Fonte de VOLUME: a BUSCA PÚBLICA do ML (lista.mercadolivre.com.br/<termo>).
  * O hub de afiliado é raso (~12/termo); a busca pública entrega ~48/página e é
- * paginada (o catálogo inteiro) — é o que os canais concorrentes usam pra ter
+ * paginada (o catálogo inteiro) - é o que os canais concorrentes usam pra ter
  * volume. Roda JUNTO com o hub (não no lugar); o hub continua dando avaliação/
  * comissão, a busca soma os milhares que o hub não pega. Dedup por id no selector.
  *
  * ⚠️ A listing exige o COOKIE do painel (sem ele o ML joga pro muro
- * account-verification). Logo é tráfego autenticado da sessão — por isso o
+ * account-verification). Logo é tráfego autenticado da sessão - por isso o
  * resultado é CACHEADO por TTL (raspa poucas vezes por hora, não a cada post).
  * O link já sai com a tag de afiliado (parseOfertasHtml → buildAffiliateUrl).
  */
@@ -89,7 +89,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 
 /**
  * Busca vários termos na busca pública (paginado), dedup por id. CACHEADO por
- * TTL — chamadas dentro do TTL reusam o último resultado (não re-raspa a cada
+ * TTL - chamadas dentro do TTL reusam o último resultado (não re-raspa a cada
  * post). O selector chama isso junto com o hub.
  */
 export async function fetchSearchDeals(

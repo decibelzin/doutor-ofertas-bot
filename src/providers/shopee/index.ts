@@ -5,11 +5,11 @@ import { logger } from '../../logger';
 import { makeDeal, type Deal } from '../../core/deal';
 
 /**
- * Provider Shopee — Shopee Affiliate Open API (GraphQL). Credenciais em
+ * Provider Shopee - Shopee Affiliate Open API (GraphQL). Credenciais em
  * https://affiliate.shopee.com.br -> "Open API" (App ID + App Secret).
  *
- * Vantagem sobre o ML: a query `productOfferV2` já devolve o `offerLink` — o
- * link de afiliado PRONTO com a sua tag — junto com preço, desconto e comissão.
+ * Vantagem sobre o ML: a query `productOfferV2` já devolve o `offerLink` - o
+ * link de afiliado PRONTO com a sua tag - junto com preço, desconto e comissão.
  * Zero scraping, atribuição garantida pela própria Shopee.
  *
  * Autenticação (esquema da Shopee):
@@ -106,7 +106,7 @@ export const name = 'shopee';
 /** Busca ofertas na Shopee para as palavras-chave dadas (usado por nichos). */
 export async function fetchDealsForKeywords(keywords: string[], minDiscount?: number): Promise<Deal[]> {
   if (!config.shopee.enabled) {
-    logger.warn('[Shopee] SHOPEE_APP_ID/SHOPEE_APP_SECRET ausentes — pulando Shopee.');
+    logger.warn('[Shopee] SHOPEE_APP_ID/SHOPEE_APP_SECRET ausentes - pulando Shopee.');
     return [];
   }
 

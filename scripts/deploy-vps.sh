@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy na VPS. Roda NA VPS — o atalho local é `npm run deploy`.
+# Deploy na VPS. Roda NA VPS - o atalho local é `npm run deploy`.
 #
 # O nginx serve direto de <repo>/website, então atualizar a landing é só o
 # `git pull`: as páginas geradas por `npm run build-site` estão commitadas.
@@ -37,7 +37,7 @@ if [ "$(git rev-parse HEAD:package-lock.json 2>/dev/null || echo vazio)" != "$an
 fi
 
 # Só recompila e reinicia se o código do bot mudou. Mudança só de landing não
-# derruba a conexão do WhatsApp — reconectar é o momento de maior risco.
+# derruba a conexão do WhatsApp - reconectar é o momento de maior risco.
 if [ "$(git rev-parse HEAD:src 2>/dev/null || echo vazio)" != "$antes_src" ]; then
   echo "→ src mudou: build + restart"
   npm run build

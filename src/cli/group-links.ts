@@ -1,5 +1,5 @@
 /**
- * Lista o LINK DE CONVITE de cada grupo configurado — é o que vai no site
+ * Lista o LINK DE CONVITE de cada grupo configurado - é o que vai no site
  * (botão "Entrar no grupo").
  *
  *   npm run group-links
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
       try {
         nome = (await sock.groupMetadata(groupId)).subject ?? groupId;
       } catch {
-        /* sem metadata — segue com o id */
+        /* sem metadata - segue com o id */
       }
       try {
         const code = await sock.groupInviteCode(groupId);
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
       } catch (err) {
         const msg = (err as Error).message;
         console.log(`\n  ${nome}`);
-        console.log(`  ⚠️ não consegui o convite (${msg}) — o bot precisa ser ADMIN do grupo.`);
+        console.log(`  ⚠️ não consegui o convite (${msg}) - o bot precisa ser ADMIN do grupo.`);
       }
     }
   }

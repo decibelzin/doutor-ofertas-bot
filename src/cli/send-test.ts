@@ -11,7 +11,7 @@ import { config } from '../config';
 import { logger } from '../logger';
 
 const SAMPLE = [
-  '🔥 TESTE — Fone Bluetooth JBL Tune 510BT',
+  '🔥 TESTE - Fone Bluetooth JBL Tune 510BT',
   '❌ De R$ 299,90',
   '✅ Por R$ 179,90',
   '📉 40% OFF',

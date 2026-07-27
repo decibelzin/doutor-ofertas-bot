@@ -14,7 +14,7 @@ let warnedNoTag = false;
  * Você pega matt_word/matt_tool UMA vez na Central de Afiliados: gere qualquer
  * link lá e leia esses dois parâmetros na URL resultante. Não são segredo.
  *
- * ATENÇÃO: se não houver tag configurada, devolve o link cru — o produto será
+ * ATENÇÃO: se não houver tag configurada, devolve o link cru - o produto será
  * postável, mas SEM comissão. Verifique a atribuição no painel após o 1º teste.
  */
 export function buildAffiliateUrl(permalink: string): string {
@@ -41,7 +41,7 @@ export function buildAffiliateUrl(permalink: string): string {
   if (!warnedNoTag) {
     warnedNoTag = true;
     logger.warn(
-      '[ML] Sem tag de afiliado (ML_MATT_WORD/ML_MATT_TOOL) — links sairão SEM comissão. ' +
+      '[ML] Sem tag de afiliado (ML_MATT_WORD/ML_MATT_TOOL) - links sairão SEM comissão. ' +
         'Pegue os valores na Central de Afiliados e coloque no .env.'
     );
   }

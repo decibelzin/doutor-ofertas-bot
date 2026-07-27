@@ -1,14 +1,14 @@
 import { logger } from '../logger';
 
 /**
- * Alerta de SAÚDE — hoje focado na degradação de autenticação do painel do ML
+ * Alerta de SAÚDE - hoje focado na degradação de autenticação do painel do ML
  * (cookie/csrf expiram e derrubam hub + cupom + link curto em silêncio). Loga
  * ERRO alto com instrução de recuperação e, se houver um "sink" configurado
  * (ex.: mandar no WhatsApp), notifica. Throttled por motivo pra não spammar.
  */
 
 /**
- * O sink recebe também `reason` e `detail` — sem eles o destino não consegue
+ * O sink recebe também `reason` e `detail` - sem eles o destino não consegue
  * explicar o erro nem montar um embed decente; só repassaria a frase pronta.
  */
 type AlertSink = (
@@ -34,7 +34,7 @@ export function alertAuthDegraded(reason: string, detail?: Record<string, unknow
 
   const msg =
     `⚠️ [doutor-bot] Autenticação do ML degradada (${reason}). ` +
-    `Recapture ML_AFFILIATE_COOKIE/CSRF do painel de afiliado e cole no .env — ` +
+    `Recapture ML_AFFILIATE_COOKIE/CSRF do painel de afiliado e cole no .env - ` +
     `a captação (hub/cupom/link curto) está degradada até lá.`;
   logger.error({ reason, ...detail }, `[SAÚDE] ${msg}`);
 

@@ -23,7 +23,7 @@ import { isInBank, lookupNotas } from '../format/perfumes';
  *   scrape <url>               raspa uma listing de cupom → títulos + match no banco
  *   scan <fromPage> <toPage>   amostra: lista → resolve → raspa → % de cupons de perfume
  *   get <path>                 GET cru na base /affiliate-program/api/affiliates
- *   post <path> <json>         POST cru — ESCRITA, só rodar com OK explícito do usuário
+ *   post <path> <json>         POST cru - ESCRITA, só rodar com OK explícito do usuário
  */
 
 const BASE = 'https://www.mercadolivre.com.br/affiliate-program/api/affiliates';
@@ -176,7 +176,7 @@ async function cmdCreds(): Promise<void> {
     console.log('Cookie/csrf VÁLIDOS.');
   } else {
     console.log(JSON.stringify(data).slice(0, 500));
-    console.log('Cookie/csrf INVÁLIDOS ou expirados — recapturar do painel e colar no .env.');
+    console.log('Cookie/csrf INVÁLIDOS ou expirados - recapturar do painel e colar no .env.');
   }
 }
 
@@ -323,7 +323,7 @@ async function cmdBundle(): Promise<void> {
     }
     return;
   }
-  console.log('Nenhum asset direto contém create-code — procurando manifest de chunks...');
+  console.log('Nenhum asset direto contém create-code - procurando manifest de chunks...');
   // 3) Fallback: index com mapa de chunks lazy (id → hash).
   for (const u of assetUrls) {
     const js = await axios.get<string>(u, { timeout: 25000, responseType: 'text' });
@@ -331,7 +331,7 @@ async function cmdBundle(): Promise<void> {
     if (!map) continue;
     console.log(`manifest candidato em ${u}: ${map[0]!.slice(0, 200)}...`);
     const pairs = [...map.join(',').matchAll(/(\d+):"([a-f0-9]{8,})"/g)];
-    console.log(`chunks no mapa: ${pairs.length} — baixando até achar create-code`);
+    console.log(`chunks no mapa: ${pairs.length} - baixando até achar create-code`);
     for (const [, id, hash] of pairs) {
       const cu = `https://http2.mlstatic.com/frontend-assets/affiliates-site/${id}.${hash}.js`;
       try {
@@ -349,12 +349,12 @@ async function cmdBundle(): Promise<void> {
           return;
         }
       } catch {
-        // chunk fora do padrão de URL — segue
+        // chunk fora do padrão de URL - segue
       }
       await sleep(150);
     }
   }
-  console.log('Não achei o chunk — inspecionar panel-cupons.html manualmente.');
+  console.log('Não achei o chunk - inspecionar panel-cupons.html manualmente.');
 }
 
 // ---------------------------------------------------------------------------
@@ -414,7 +414,7 @@ async function cmdScan(fromPage: number, toPage: number): Promise<void> {
   };
 
   // Cache de raspagem por conjunto de produtos (url sem query): cupons da mesma
-  // loja apontam pro mesmo catálogo — raspa 1x.
+  // loja apontam pro mesmo catálogo - raspa 1x.
   const scrapeCache = new Map<string, ScrapedListing | { error: string }>();
 
   for (let page = fromPage; page <= toPage; page += 1) {
@@ -426,7 +426,7 @@ async function cmdScan(fromPage: number, toPage: number): Promise<void> {
       coupons = d.coupons ?? [];
     } catch (err) {
       console.error(`[scan] page ${page}: ${(err as Error).message}`);
-      break; // provável credencial expirada / rate-limit — parar e preservar estado
+      break; // provável credencial expirada / rate-limit - parar e preservar estado
     }
     console.log(`[scan] page ${page}: ${coupons.length} cupons`);
 
@@ -559,7 +559,7 @@ async function main(): Promise<void> {
       return;
     }
     case 'post': {
-      // ESCRITA na conta do afiliado — só rodar com OK explícito do usuário.
+      // ESCRITA na conta do afiliado - só rodar com OK explícito do usuário.
       if (!a1 || !a2) throw new Error('uso: post "/caminho" \'{"json":1}\'');
       const { status, data } = await apiPost(a1, JSON.parse(a2));
       console.log(`POST ${a1} -> ${status}`);

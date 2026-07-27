@@ -1,15 +1,15 @@
 /* ============================================================================
-   Doutor Ofertas — landing (tela única, responsiva de 320px a ultrawide)
+   Doutor Ofertas - landing (tela única, responsiva de 320px a ultrawide)
    Preto quase-puro + dourado metálico + verde WhatsApp no CTA.
    CSS puro de propósito: sem Tailwind CDN, a página pinta na hora no 4G.
 
    Estratégia responsiva: tudo escala por clamp() em vez de saltar em
-   breakpoints. Só há media query para o que clamp() não resolve —
+   breakpoints. Só há media query para o que clamp() não resolve -
    orientação paisagem e telas muito baixas.
 
    ⚠️ Tipografia: os corpos de texto escalam por vw PURO, não por
    min(vw, vh). Em retrato vh é sempre muito maior que vw, então min() sempre
-   devolvia vw — e vw ficava abaixo do piso do clamp. Resultado medido em
+   devolvia vw - e vw ficava abaixo do piso do clamp. Resultado medido em
    320x568, 360x800 e 390x844: TODO texto travava no mínimo (CTA 14px, apoio
    11px, notas 9px) em 100% dos celulares. A escala fluida só funcionava no
    desktop, que é justamente a minoria do tráfego.
@@ -45,7 +45,7 @@ body {
   align-items: center;         /* centraliza a composição em telas altas */
 }
 
-/* Brilho dourado atrás do logo — escala junto com a tela */
+/* Brilho dourado atrás do logo - escala junto com a tela */
 .glow {
   position: fixed;
   top: 6%; left: 50%;
@@ -80,7 +80,7 @@ body {
   text-align: center;
 }
 
-/* Blocos mantem a altura natural — sem isso o flex esmaga o logo em tela alta */
+/* Blocos mantem a altura natural - sem isso o flex esmaga o logo em tela alta */
 .screen > * { flex: 0 0 auto; }
 
 /* ── Marca ─────────────────────────────────────────────────────────────── */
@@ -90,7 +90,7 @@ body {
 }
 
 .logo-ring {
-  /* vmin faz o logo respeitar a MENOR dimensão — não estoura em paisagem */
+  /* vmin faz o logo respeitar a MENOR dimensão - não estoura em paisagem */
   width: clamp(64px, 21vmin, 210px);
   height: clamp(64px, 21vmin, 210px);
   padding: 4px;
@@ -134,7 +134,7 @@ body {
 
 /* Dourado metálico. O gradiente fica dentro de @supports E fora de print:
    -webkit-text-fill-color vence color na pintura do glifo, então declarar os
-   dois soltos não era fallback nenhum — em forced-colors ou "Salvar como PDF"
+   dois soltos não era fallback nenhum - em forced-colors ou "Salvar como PDF"
    sem gráficos de fundo, o "70% OFF" sumia. */
 .gold { color: var(--gold); }
 
@@ -186,7 +186,7 @@ body {
   color: var(--gold);
 }
 /* Sem raio: ⚡ é o vocabulário visual de disparo em massa e de conta pirata.
-   Não adicionava informação — a linha diz o que precisa dizer sozinha — e
+   Não adicionava informação - a linha diz o que precisa dizer sozinha - e
    adicionava textura de spam justamente onde a página precisa parecer sóbria. */
 
 .cta {
@@ -257,7 +257,7 @@ body {
 /* ── Rodapé ────────────────────────────────────────────────────────────── */
 .foot p {
   /* Idem: era 9px com opacity .5 (3.35:1). É a linha que posiciona o projeto
-     como curadoria e explica a comissão — precisa ser lida. */
+     como curadoria e explica a comissão - precisa ser lida. */
   font-size: clamp(11px, 3vw, 18px);
   font-weight: 600;
   letter-spacing: .01em;
@@ -271,7 +271,7 @@ body {
    maximizada): o bloco de conteúdo tem altura quase fixa e o rodapé caía pra
    fora da tela única. Aperta logo, ritmo e headline.
 
-   min-height: 500px exclui celular deitado — esse caso tem regra própria logo
+   min-height: 500px exclui celular deitado - esse caso tem regra própria logo
    abaixo, e sem essa condição um 812x375 cairia aqui também. */
 @media (min-width: 900px) and (min-height: 500px) and (max-height: 820px) {
   :root { --rhythm: clamp(8px, 1.6vh, 16px); }
@@ -281,7 +281,7 @@ body {
 
 /* ── PAISAGEM / telas muito baixas ─────────────────────────────────────────
    Celular deitado (ex.: 812x375) não cabe em coluna. Vira 2 colunas: marca de
-   um lado, chamada e botão do outro — e permite rolar se ainda faltar espaço
+   um lado, chamada e botão do outro - e permite rolar se ainda faltar espaço
    (nunca prender o usuário sem ver o botão). */
 @media (max-height: 460px) and (orientation: landscape) {
   body { min-height: auto; }

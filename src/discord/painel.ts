@@ -15,11 +15,11 @@ import { OURO } from './acoes/comum';
 import { logger } from '../logger';
 
 /**
- * PAINEL DE CONTROLE — uma mensagem fixa com botões.
+ * PAINEL DE CONTROLE - uma mensagem fixa com botões.
  *
  * A mensagem é ESTÁTICA: os botões respondem em efêmero e ninguém reescreve o
  * painel. Uma versão anterior tentava manter o próprio painel auto-atualizando
- * e era frágil — dependia de guardar o id da mensagem, sobreviver a restart e
+ * e era frágil - dependia de guardar o id da mensagem, sobreviver a restart e
  * reeditar em laço. Estático não tem nenhum desses modos de falha, e a
  * informação chega igual de fresca porque é lida na hora do clique.
  *
@@ -38,14 +38,14 @@ export const BOTOES = {
 export function montarPainel(): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] } {
   const embed = new EmbedBuilder()
     .setColor(OURO)
-    .setTitle('🎛️ Painel de Controle — Doutor Ofertas')
+    .setTitle('🎛️ Painel de Controle - Doutor Ofertas')
     .setDescription(
       'Use os botões abaixo. Só você vê as respostas.\n\n' +
-        '**📊 Status** — está tudo no ar? última postagem, tetos, site\n' +
-        '**📈 Funil** — visitas, cliques e conversão da landing\n' +
-        '**👥 Grupos** — membros, vagas e pra onde o botão do site aponta\n' +
-        '**⏸️ Pausar** — freia a postagem na hora\n' +
-        '**▶️ Retomar** — volta a postar'
+        '**📊 Status** - está tudo no ar? última postagem, tetos, site\n' +
+        '**📈 Funil** - visitas, cliques e conversão da landing\n' +
+        '**👥 Grupos** - membros, vagas e pra onde o botão do site aponta\n' +
+        '**⏸️ Pausar** - freia a postagem na hora\n' +
+        '**▶️ Retomar** - volta a postar'
     )
     .setFooter({ text: 'cada botão também existe como comando: /status /funil /grupos /pausar /retomar' });
 
@@ -68,7 +68,7 @@ export async function tratarBotaoPainel(interaction: ButtonInteraction): Promise
   const id = interaction.customId;
   if (!id.startsWith('painel:')) return false;
 
-  // Pausar/Retomar mudam estado: só admin. Os de leitura ficam livres — quem
+  // Pausar/Retomar mudam estado: só admin. Os de leitura ficam livres - quem
   // enxerga o painel já pode rodar os slash commands equivalentes.
   const mudaEstado = id === BOTOES.pausar || id === BOTOES.retomar;
   if (mudaEstado && !interaction.memberPermissions?.has('Administrator')) {

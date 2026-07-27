@@ -8,10 +8,10 @@ import type { Deal } from '../../core/deal';
 
 /**
  * Gera o link curto OFICIAL do ML (meli.la) via o endpoint interno
- * `createLink` do painel de afiliado — o mesmo que o botão "Compartilhar" usa.
+ * `createLink` do painel de afiliado - o mesmo que o botão "Compartilhar" usa.
  *
  * Método NÃO-OFICIAL: precisa do cookie de sessão + x-csrf-token capturados do
- * navegador (painel de afiliado). Esses valores EXPIRAM — quando isso acontece,
+ * navegador (painel de afiliado). Esses valores EXPIRAM - quando isso acontece,
  * a geração falha e o bot cai automaticamente no link matt (longo).
  *
  * Como o mesmo produto se repete, guardamos o resultado num cache em disco
@@ -93,7 +93,7 @@ export async function generateShortLink(itemId: string, productUrl: string): Pro
     const status = (err as { response?: { status?: number } })?.response?.status;
     logger.warn(
       { err: (err as Error).message, status },
-      '[ML/shortlink] Falha ao gerar link curto (cookie/csrf expirado?) — usando link matt.'
+      '[ML/shortlink] Falha ao gerar link curto (cookie/csrf expirado?) - usando link matt.'
     );
     if (status === 401 || status === 403) alertAuthDegraded('shortlink-nao-autorizado', { status });
     return null;

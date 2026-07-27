@@ -8,14 +8,14 @@ import { logger } from '../logger';
  * FUNIL DA LANDING lido direto dos logs do nginx.
  *
  * Não há pixel nem cookie: o formato `combined` do nginx já registra IP,
- * caminho, horário, referrer e user-agent — que é tudo que o funil precisa.
+ * caminho, horário, referrer e user-agent - que é tudo que o funil precisa.
  *
  * Dois arquivos:
  *  - acessos: toda requisição ao site (visita = GET numa página de nicho)
  *  - cliques: só a rota /e, que o CTA chama via navigator.sendBeacon
  *
  * ⚠️ sendBeacon manda **POST**, não GET. Procurar só por GET conta zero clique
- * real e ainda casa com os `curl` de verificação — ou seja, mediria o próprio
+ * real e ainda casa com os `curl` de verificação - ou seja, mediria o próprio
  * ruído. Por isso `MetodoClique` aceita os dois.
  */
 
@@ -38,16 +38,16 @@ const MESES: Record<string, number> = {
   Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
 };
 
-/** Robô não é gente. Sem isso o próprio raspador de link do WhatsApp — que
- *  busca a página toda vez que alguém compartilha — entra como visita e afunda
+/** Robô não é gente. Sem isso o próprio raspador de link do WhatsApp - que
+ *  busca a página toda vez que alguém compartilha - entra como visita e afunda
  *  a taxa de clique. */
 const ROBOS =
   /bot|crawler|spider|facebookexternalhit|whatsapp|discordbot|twitterbot|slackbot|telegrambot|curl|wget|headlesschrome|python-requests|go-http|monitoring|uptime/i;
 
-/** Página de nicho: /perfumes ou /perfumes/ — um segmento, sem extensão. */
+/** Página de nicho: /perfumes ou /perfumes/ - um segmento, sem extensão. */
 const PAGINA_NICHO = /^\/[a-z0-9-]+\/?$/;
 
-/** `27/Jul/2026:14:05:44 +0000` — o nginx não escreve ISO. */
+/** `27/Jul/2026:14:05:44 +0000` - o nginx não escreve ISO. */
 function parseData(bruto: string): Date | null {
   const m = /^(\d{2})\/(\w{3})\/(\d{4}):(\d{2}):(\d{2}):(\d{2}) ([+-]\d{4})$/.exec(bruto);
   if (!m) return null;
@@ -69,7 +69,7 @@ function lerLog(arquivo: string): string {
       const bruto = fs.readFileSync(nome);
       partes.push(nome.endsWith('.gz') ? zlib.gunzipSync(bruto).toString('utf8') : bruto.toString('utf8'));
     } catch {
-      /* não existe ou ainda não rotacionou — normal */
+      /* não existe ou ainda não rotacionou - normal */
     }
   }
   return partes.join('\n');
@@ -104,7 +104,7 @@ export interface FunilResumo {
   paginas: number;
   cliques: number;
   cliquesUnicos: number;
-  /** null quando não houve visita — evita dividir por zero e fingir 0%. */
+  /** null quando não houve visita - evita dividir por zero e fingir 0%. */
   taxaCliquePercent: number | null;
   origens: { origem: string; visitas: number }[];
   porNicho: { nicho: string; cliques: number }[];
@@ -142,7 +142,7 @@ const ordenado = (m: Map<string, number>): [string, number][] =>
  *
  * Rolante, e não dia do calendário, de propósito: um painel que zera à
  * meia-noite parece quebrado às 9h da manhã. `dias = 1` é "últimas 24 horas",
- * não "hoje desde a meia-noite" — a quebra `porDia` é que agrupa por data.
+ * não "hoje desde a meia-noite" - a quebra `porDia` é que agrupa por data.
  */
 export function lerFunil(dias = 1): FunilResumo {
   const avisos: string[] = [];
@@ -197,13 +197,13 @@ export function lerFunil(dias = 1): FunilResumo {
 /** Texto pronto pro terminal. O Discord monta o dele a partir do objeto. */
 export function formatarFunil(f: FunilResumo): string {
   const L: string[] = [];
-  L.push('', `FUNIL — últimos ${f.dias} dia(s)`, '─'.repeat(38));
+  L.push('', `FUNIL - últimos ${f.dias} dia(s)`, '─'.repeat(38));
   const linha = (r: string, v: string | number) => L.push(`  ${r.padEnd(24)} ${v}`);
   linha('visitantes (IP único)', f.visitantes);
   linha('páginas vistas', f.paginas);
   linha('cliques no botão', f.cliques);
   linha('quem clicou (IP único)', f.cliquesUnicos);
-  linha('TAXA DE CLIQUE', f.taxaCliquePercent === null ? '—' : `${f.taxaCliquePercent.toFixed(1)}%`);
+  linha('TAXA DE CLIQUE', f.taxaCliquePercent === null ? '-' : `${f.taxaCliquePercent.toFixed(1)}%`);
 
   if (f.origens.length) {
     L.push('', '  De onde vieram:');

@@ -31,7 +31,7 @@ export function enabledProviders(): Provider[] {
 export async function collectRankedDeals(): Promise<Deal[]> {
   const providers = enabledProviders();
   if (providers.length === 0) {
-    logger.warn('[Selector] Nenhum provider ativo — confira as credenciais no .env.');
+    logger.warn('[Selector] Nenhum provider ativo - confira as credenciais no .env.');
     return [];
   }
 

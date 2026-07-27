@@ -62,7 +62,7 @@ export interface Config {
     announceAuto: boolean;
     // De quanto em quanto tempo checar se há código novo (min).
     announceCheckMinutes: number;
-    // Intervalo MÍNIMO entre dois anúncios (horas) — @all é sensível a spam.
+    // Intervalo MÍNIMO entre dois anúncios (horas) - @all é sensível a spam.
     announceMinGapHours: number;
     // Quantos cupons de site inteiro (agregador) entram na mensagem.
     announceMaxFeedCoupons: number;
@@ -80,7 +80,7 @@ export interface Config {
     alertGroup: string;
     /**
      * Números da equipe (só dígitos, separados por vírgula) que NÃO contam como
-     * inscritos. Sem isso, você mesmo dentro do grupo aparece como público —
+     * inscritos. Sem isso, você mesmo dentro do grupo aparece como público -
      * com poucos membros, isso distorce a métrica em dezenas por cento.
      */
     teamNumbers: string[];
@@ -140,13 +140,13 @@ export interface Config {
     siteId: string;
     searchTerms: string[];
     minDiscountPercent: number;
-    // Avaliação mínima (0–5) pra postar um produto do hub. 0 = desligado.
+    // Avaliação mínima (0-5) pra postar um produto do hub. 0 = desligado.
     minRating: number;
     // Quantas páginas (12 itens cada) buscar por termo no hub de afiliado.
     hubPagesPerTerm: number;
     // Busca pública (lista.mercadolivre.com.br): páginas por termo (48/pág). 0 = desliga.
     searchPagesPerTerm: number;
-    // TTL do cache da busca pública (min) — raspa 1x por esse período, não a cada post.
+    // TTL do cache da busca pública (min) - raspa 1x por esse período, não a cada post.
     searchTtlMinutes: number;
     // TTL do cache dos CUPONS PÚBLICOS do ML (mercadolivre.com.br/cupons), em min.
     publicCouponsTtlMinutes: number;

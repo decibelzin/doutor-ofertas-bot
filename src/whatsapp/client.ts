@@ -24,7 +24,7 @@ function notifyReady(s: WASocket): void {
 
 /**
  * Conecta ao WhatsApp via Baileys. Na primeira execução, um QR code é impresso
- * no terminal — escaneie com WhatsApp > Aparelhos conectados. As credenciais
+ * no terminal - escaneie com WhatsApp > Aparelhos conectados. As credenciais
  * ficam salvas em SESSION_DIR, então nas próximas vezes não é necessário
  * escanear de novo (a menos que a sessão seja revogada).
  *
@@ -40,7 +40,7 @@ export async function connectWhatsApp(): Promise<WASocket> {
     auth: state,
     printQRInTerminal: false,
     markOnlineOnConnect: false,
-    // Baileys usa um logger pino-compatível; deixamos em 'silent' — a lib faz
+    // Baileys usa um logger pino-compatível; deixamos em 'silent' - a lib faz
     // "init queries" em segundo plano que às vezes dão timeout (408) inofensivo,
     // e nós já logamos o que importa (conexão, envio, falhas) por conta própria.
     logger: logger.child({ module: 'baileys' }, { level: 'silent' }) as never,

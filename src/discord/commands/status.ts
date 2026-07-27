@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import { montarStatus } from '../acoes/status';
 
-/** /status — está tudo no ar? */
+/** /status - está tudo no ar? */
 export const data = new SlashCommandBuilder()
   .setName('status')
   .setDescription('Estado do bot: postagem, grupos e site')

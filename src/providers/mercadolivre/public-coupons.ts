@@ -5,7 +5,7 @@ import { alertAuthDegraded } from '../../core/health';
 import { isPerfumeProduct } from './coupons';
 
 /**
- * CUPONS PÚBLICOS DO ML (mercadolivre.com.br/cupons) — os mesmos que os canais
+ * CUPONS PÚBLICOS DO ML (mercadolivre.com.br/cupons) - os mesmos que os canais
  * concorrentes postam ("CUPOM RELÂMPAGO"). Diferente dos cupons de VENDEDOR
  * (coupons.ts, auto-aplicados), estes são cupons do próprio ML, que o comprador
  * ativa/usa, e valem pra QUALQUER pessoa (não são da nossa conta de afiliado).
@@ -14,14 +14,14 @@ import { isPerfumeProduct } from './coupons';
  * extrai os objetos `{"campaign_id": ...}` balanceando chaves, e fica com os que
  * têm produto de PERFUMARIA (domain_id MLB-PERFUMES ou título de perfume).
  *
- * ⚠️ A página exige sessão (cookie do painel) — senão cai no muro/login.
+ * ⚠️ A página exige sessão (cookie do painel) - senão cai no muro/login.
  */
 
 const URL = 'https://www.mercadolivre.com.br/cupons';
 /**
  * API JSON dos cupons. O filtro `special_coupon=true` é o ÚNICO que devolve o
  * CÓDIGO LEGÍVEL (ex.: "AFILIADOPET26") no campo `code`/`inputCode`; todos os
- * outros filtros — e o HTML da página — só trazem um token opaco de 88 chars.
+ * outros filtros - e o HTML da página - só trazem um token opaco de 88 chars.
  * Descoberto por engenharia reversa do bundle smart-coupons-frontend.
  */
 const SPECIAL_API =
@@ -44,7 +44,7 @@ export interface PublicCouponItem {
 export interface PublicCoupon {
   campaignId: string;
   title: string;
-  /** IDs (MLB…) dos produtos elegíveis — vêm de um objeto irmão no mesmo HTML. */
+  /** IDs (MLB…) dos produtos elegíveis - vêm de um objeto irmão no mesmo HTML. */
   itemIds: string[];
   /** Ex.: "Compra mínima R$ 150" (texto pronto do ML). */
   minAmountText: string | null;
@@ -56,7 +56,7 @@ export interface PublicCoupon {
   activationType: string | null;
   /**
    * Link direto pro cupom na página do ML (abre já apontando pra ele). Esses
-   * cupons NÃO têm código digitável — são de ativar por clique ("Aplicar"), e o
+   * cupons NÃO têm código digitável - são de ativar por clique ("Aplicar"), e o
    * `code` é um token opaco. Este link é o equivalente ao "código" pro cliente.
    */
   activationUrl: string | null;
@@ -102,7 +102,7 @@ const PERFUME_TEXT = /\b(perfum|parfum|eau de|\bedt\b|\bedp\b)\b/i;
 /**
  * É item de perfumaria? Domínio MLB-PERFUMES crava; senão exige que o título
  * passe no mesmo crivo das ofertas (`isPerfumeProduct`), que corta difusor de
- * ambiente, sabonete, kit banho e afins — falsos-positivos de "fragrância".
+ * ambiente, sabonete, kit banho e afins - falsos-positivos de "fragrância".
  */
 function isPerfumeItem(i: PublicCouponItem): boolean {
   if (PERFUME_DOMAIN.test(i.domainId)) return true;
@@ -135,12 +135,12 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
     try {
       raw.push(JSON.parse(html.slice(start, end)) as Record<string, unknown>);
     } catch {
-      /* fragmento inválido — ignora */
+      /* fragmento inválido - ignora */
     }
   }
 
   // Os IDs dos produtos elegíveis vêm num objeto IRMÃO (mesmo campaign_id) que
-  // carrega `item_ids` — o card visual só traz imagem/alt_text/domain_id.
+  // carrega `item_ids` - o card visual só traz imagem/alt_text/domain_id.
   const idsByCampaign = new Map<string, string[]>();
   for (const c of raw) {
     const id = String(c.campaign_id ?? '');
@@ -186,7 +186,7 @@ export function parsePublicCouponsHtml(html: string): PublicCoupon[] {
 
 /**
  * Cupons com CÓDIGO DIGITÁVEL vigentes (filtro `special_coupon`). São poucos
- * (3–5) e rotativos — vários vencem no mesmo dia —, então vale consultar de
+ * (3-5) e rotativos - vários vencem no mesmo dia -, então vale consultar de
  * hora em hora pra pegar os novos cedo. É o equivalente ao "CUPOM RELÂMPAGO"
  * dos concorrentes.
  */
@@ -283,7 +283,7 @@ function apiCouponToPublic(c: Record<string, unknown>): PublicCoupon | null {
 /**
  * Busca TODOS os cupons públicos de perfumaria, varrendo a API paginada
  * (~75 páginas). Muito superior a raspar o HTML da página, que só expõe as
- * primeiras dezenas — a varredura completa acha ~50 cupons de perfumaria contra
+ * primeiras dezenas - a varredura completa acha ~50 cupons de perfumaria contra
  * ~2 do HTML. Cacheado por TTL (o conjunto muda devagar).
  */
 export async function fetchPublicPerfumeCoupons({
@@ -342,7 +342,7 @@ export async function fetchPublicPerfumeCoupons({
   cache.coupons = out;
   logger.info(
     { paginas: pages, varridos: seen.size, perfumaria: out.length },
-    '[ML/cupons-públicos] Catálogo varrido — cupons de perfumaria.'
+    '[ML/cupons-públicos] Catálogo varrido - cupons de perfumaria.'
   );
   return out;
 }

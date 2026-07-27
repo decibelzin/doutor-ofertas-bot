@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   });
 
   if (!result.written) {
-    logger.error({ ...result }, '[discover] Cache NÃO gravado (degradado/auth) — cache anterior preservado.');
+    logger.error({ ...result }, '[discover] Cache NÃO gravado (degradado/auth) - cache anterior preservado.');
     process.exit(1);
   }
   logger.info(
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
     );
     for (const p of c.products.slice(0, 3)) console.log(`    - ${p.title.slice(0, 60)}`);
   }
-  if ((cache?.coupons?.length ?? 0) === 0) console.log('(nenhum — tente aumentar o range de páginas ou revisar a watchlist)');
+  if ((cache?.coupons?.length ?? 0) === 0) console.log('(nenhum - tente aumentar o range de páginas ou revisar a watchlist)');
   process.exit(0);
 }
 

@@ -10,17 +10,17 @@ import * as retomar from './commands/retomar';
 import { tratarBotaoPainel } from './painel';
 
 /**
- * BOT DO DISCORD — processo separado do bot do WhatsApp.
+ * BOT DO DISCORD - processo separado do bot do WhatsApp.
  *
  * Separado de propósito: a sessão do Baileys é frágil e cara de recuperar
  * (reconectar é o momento de maior risco), então um erro aqui não pode
- * derrubar aquilo. Mesmo repositório porque o pipeline de ofertas — scraping,
- * dedup, formatação, link de afiliado — vai ser compartilhado quando as
+ * derrubar aquilo. Mesmo repositório porque o pipeline de ofertas - scraping,
+ * dedup, formatação, link de afiliado - vai ser compartilhado quando as
  * ofertas passarem a sair também nos canais do servidor.
  *
  * Expõe /painel (mensagem fixa com botões) e um slash command por ação:
  * /status /funil /grupos /pausar /retomar. Painel e comando chamam a MESMA
- * função de `acoes/` — o painel é conveniência, não uma segunda implementação.
+ * função de `acoes/` - o painel é conveniência, não uma segunda implementação.
  *
  * Não pede intent privilegiada nenhuma: slash command não precisa ler
  * mensagem, então o bot roda com o mínimo de permissão possível.
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
   }
 }
 
-// Só roda como serviço quando é o módulo principal — permite importar daqui
+// Só roda como serviço quando é o módulo principal - permite importar daqui
 // sem subir o bot (ex.: em teste ou quando o scheduler for reusar o client).
 if (require.main === module) {
   main().catch((err: unknown) => {

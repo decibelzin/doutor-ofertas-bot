@@ -13,7 +13,7 @@ import { buildAffiliateUrl } from './affiliate';
  *
  * Autenticado com o MESMO cookie + x-csrf-token do createLink (shortlink.ts).
  * Retorna produtos no formato "polycard" (JSON), com preço de/por, desconto,
- * link, imagem, COMISSÃO e AVALIAÇÃO — o catálogo inteiro por busca, muito mais
+ * link, imagem, COMISSÃO e AVALIAÇÃO - o catálogo inteiro por busca, muito mais
  * abrangente que a página pública de /ofertas.
  */
 
@@ -121,7 +121,7 @@ export async function fetchHubDeals(
   { pagesPerTerm = 1, concurrency = 3 }: { pagesPerTerm?: number; concurrency?: number } = {}
 ): Promise<Deal[]> {
   if (!hubEnabled()) {
-    logger.warn('[ML/hub] Cookie/csrf do painel ausentes — hub desligado.');
+    logger.warn('[ML/hub] Cookie/csrf do painel ausentes - hub desligado.');
     return [];
   }
 

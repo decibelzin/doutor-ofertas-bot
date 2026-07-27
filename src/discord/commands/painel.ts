@@ -2,7 +2,7 @@ import { SlashCommandBuilder, PermissionFlagsBits, type ChatInputCommandInteract
 import { montarPainel } from '../painel';
 import { logger } from '../../logger';
 
-/** /painel — publica o painel de controle no canal. Mensagem fixa, não efêmera. */
+/** /painel - publica o painel de controle no canal. Mensagem fixa, não efêmera. */
 export const data = new SlashCommandBuilder()
   .setName('painel')
   .setDescription('Publica o painel de controle com botões neste canal')

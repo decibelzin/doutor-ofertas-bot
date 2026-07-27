@@ -5,7 +5,7 @@
  *
  * 1. Abre o link que aparecer no navegador (logado na conta do ML).
  * 2. Autorize o app. O ML vai te redirecionar para https://example.com/?code=XXXX
- *    (a página não carrega nada — é só pra o "code" aparecer na barra do navegador).
+ *    (a página não carrega nada - é só pra o "code" aparecer na barra do navegador).
  * 3. Copie o valor do `code` (ou a URL inteira) e cole aqui.
  *
  * O token fica salvo e passa a se renovar sozinho (Refresh Token).
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   process.stdout.write(`   ${buildAuthorizationUrl()}\n\n`);
   process.stdout.write(
     '2) Autorize. Você será redirecionado para https://example.com/?code=...\n' +
-      '   (a página fica em branco — normal).\n\n'
+      '   (a página fica em branco - normal).\n\n'
   );
 
   const input = await ask('3) Cole aqui o "code" (ou a URL inteira) e tecle Enter:\n> ');

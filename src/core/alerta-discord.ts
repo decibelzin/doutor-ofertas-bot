@@ -6,7 +6,7 @@ import { logger } from '../logger';
  *
  * Webhook e não o client do discord.js de propósito: quem dispara o alerta é o
  * processo do BOT DO WHATSAPP, que é separado do bot do Discord. Um webhook é
- * um POST HTTP sem dependência, sem token de bot e sem manter conexão — se o
+ * um POST HTTP sem dependência, sem token de bot e sem manter conexão - se o
  * bot do Discord estiver fora do ar, o alerta chega mesmo assim. Justamente
  * quando as coisas estão quebrando é que o canal de aviso não pode depender de
  * mais um processo estar vivo.
@@ -20,11 +20,11 @@ const ultimo = new Map<string, number>();
 
 /** O que cada `reason` do health.ts significa em português de gente. */
 const EXPLICACAO: Record<string, string> = {
-  'hub-vazio': 'O hub de afiliado do ML voltou vazio — normalmente é o cookie expirado.',
-  'cupons-especiais-vazio': 'A API de cupons especiais respondeu sem nenhum cupom — cookie expirado.',
-  'cupons-publicos-sem-sessao': 'A página de cupons não reconheceu a sessão — cookie expirado.',
-  'busca-publica-muro': 'A busca pública caiu no muro de verificação do ML — precisa de cookie válido.',
-  'shortlink-falhou': 'O encurtador meli.la recusou — cookie ou csrf inválido.',
+  'hub-vazio': 'O hub de afiliado do ML voltou vazio - normalmente é o cookie expirado.',
+  'cupons-especiais-vazio': 'A API de cupons especiais respondeu sem nenhum cupom - cookie expirado.',
+  'cupons-publicos-sem-sessao': 'A página de cupons não reconheceu a sessão - cookie expirado.',
+  'busca-publica-muro': 'A busca pública caiu no muro de verificação do ML - precisa de cookie válido.',
+  'shortlink-falhou': 'O encurtador meli.la recusou - cookie ou csrf inválido.',
 };
 
 const COR_ALERTA = 0xe5484d;
@@ -43,7 +43,7 @@ export async function enviarAlertaDiscord(motivo: string, mensagem: string, deta
     .map(([name, value]) => ({ name, value: String(value).slice(0, 200), inline: true }));
 
   const corpo = {
-    username: 'Doutor Ofertas — Saúde',
+    username: 'Doutor Ofertas - Saúde',
     embeds: [
       {
         color: COR_ALERTA,

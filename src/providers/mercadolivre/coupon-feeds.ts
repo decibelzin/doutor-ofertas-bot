@@ -8,11 +8,11 @@ import { logger } from '../../logger';
  *
  * Descoberta: os códigos que os canais concorrentes postam (ALLSITE25,
  * TODOSITE25, SITEMELI25, MELIOFFHJ, LOJASOFICIAS30...) NÃO aparecem em nenhum
- * endpoint da conta de afiliado — eles são campanhas de site inteiro do ML,
+ * endpoint da conta de afiliado - eles são campanhas de site inteiro do ML,
  * publicadas em sites agregadores de cupom. É de lá que dá pra captá-los.
  *
  * Estes cupons valem pra QUALQUER comprador e (diferente dos de vendedor) o
- * cliente DIGITA o código no carrinho — por isso rendem o post "cupom relâmpago".
+ * cliente DIGITA o código no carrinho - por isso rendem o post "cupom relâmpago".
  *
  * ⚠️ Fonte de terceiro: código pode estar vencido/inválido. O post sempre traz
  * as condições e a validade é do agregador, não do ML.
@@ -192,7 +192,7 @@ async function fetchFeed(feed: Feed): Promise<Omit<FeedCoupon, 'sources'>[]> {
   const seen = new Set<string>();
 
   if (feed.mode === 'table') {
-    // Linha tipo: "20% OFF – limitado a R$100 – acima de R$29 | MELIOFFHJ | aqui"
+    // Linha tipo: "20% OFF - limitado a R$100 - acima de R$29 | MELIOFFHJ | aqui"
     $('tr').each((_, tr) => {
       const cells = $(tr)
         .find('td')

@@ -7,7 +7,7 @@ import { logger } from '../logger';
 import { writeFileAtomic } from '../util/atomic';
 
 /**
- * GERADOR DO SITE — uma página estática por nicho.
+ * GERADOR DO SITE - uma página estática por nicho.
  *
  *   npm run build-site
  *
@@ -19,7 +19,7 @@ import { writeFileAtomic } from '../util/atomic';
  * styles.css e assets/ ficam na RAIZ de website/ e são compartilhados: quem
  * visita dois nichos baixa o logo uma vez só.
  *
- * O groups.json de cada pasta NÃO é gerado aqui — quem escreve é o bot, a cada
+ * O groups.json de cada pasta NÃO é gerado aqui - quem escreve é o bot, a cada
  * SITE_REFRESH_MINUTES (ver src/core/group-status.ts).
  */
 
@@ -60,7 +60,7 @@ const COL_W = W - 56 - COL_X;
 /**
  * Largura média de um caractere em CAIXA ALTA, relativa ao corpo da fonte.
  * Uma por família: Anton/Impact são condensadas e cabem quase 30% mais texto
- * que Arial Bold no mesmo corpo — usar um fator só fazia o texto em Arial
+ * que Arial Bold no mesmo corpo - usar um fator só fazia o texto em Arial
  * vazar da arte.
  *
  * Serve só pra ESCOLHER o corpo; o `textLength` é a trava real, então um erro
@@ -119,7 +119,7 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
   const LH = Math.round(corpo * 1.02);
 
   // Alturas em baseline: a última linha do headline NÃO consome uma entrelinha
-  // inteira — somar LH por linha empurrava o apoio ~120px pra baixo.
+  // inteira - somar LH por linha empurrava o apoio ~120px pra baixo.
   const DESCIDA = corpo * 0.24;          // descida aproximada dos glifos
   const GAP_APOIO = 30;
   const GAP_PILULA = 30;
@@ -174,7 +174,7 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
 
   /* JPEG e não PNG: a arte é fotográfica (o mascote), então o PNG ficava em
      ~190 KB pra render igual. O WhatsApp é conservador com o peso do og:image
-     e desiste da prévia em imagens grandes — JPEG entrega o mesmo card por
+     e desiste da prévia em imagens grandes - JPEG entrega o mesmo card por
      volta de 1/3 do tamanho. chromaSubsampling 4:4:4 evita que o texto em
      caixa alta e o dourado fiquem com borda suja, que é o defeito típico do
      JPEG padrão (4:2:0) em cima de tipografia. */
@@ -188,7 +188,7 @@ async function geraOg(landing: Landing, destino: string): Promise<void> {
 
 /**
  * O `fallbackInvite` fica GRAVADO no HTML e é o link que vale nos primeiros
- * instantes, antes do fetch do groups.json — e é o único link se o JS falhar.
+ * instantes, antes do fetch do groups.json - e é o único link se o JS falhar.
  *
  * Ele envelhece calado: basta recriar um grupo no WhatsApp e o convite antigo
  * morre sem nada acusar. Aconteceu de verdade (grupos 1 e 2 recriados), e o
@@ -213,7 +213,7 @@ function conferConvite(landing: Landing, dir: string): void {
     `fallbackInvite de "${landing.slug}" não bate com o groups.json.\n` +
     `      no config: ${landing.fallbackInvite}\n` +
     `      no grupo:  ${join}\n` +
-    `      Se o grupo foi recriado, o convite do config está morto — atualize config/landings.json.`;
+    `      Se o grupo foi recriado, o convite do config está morto - atualize config/landings.json.`;
   logger.warn({ slug: landing.slug, config: landing.fallbackInvite, atual: join }, `[site] ${aviso}`);
   console.warn(`\n⚠  ${aviso}\n`);
 }
@@ -281,7 +281,7 @@ function geraRaiz(cfg: LandingsFile, raiz: string): void {
 
 async function main(): Promise<void> {
   const cfg = loadLandings();
-  if (!cfg) throw new Error('config/landings.json não encontrado — nada a gerar.');
+  if (!cfg) throw new Error('config/landings.json não encontrado - nada a gerar.');
 
   const tpl = fs.readFileSync(TEMPLATE, 'utf8');
   const raiz = path.resolve(config.site.dir);

@@ -10,7 +10,7 @@ import { writeFileAtomic } from '../util/atomic';
  * STATUS DOS GRUPOS pro site: quantos membros cada grupo tem e qual o link de
  * convite. O site lê esse JSON e aponta o botão pro primeiro grupo com vaga.
  *
- * Como o bot roda na MESMA VPS do site, ele escreve direto na pasta servida —
+ * Como o bot roda na MESMA VPS do site, ele escreve direto na pasta servida -
  * sem commit, sem rebuild, sem CORS (mesma origem).
  *
  * Requisitos: o bot precisa ser ADMIN do grupo pra obter o link de convite.
@@ -37,7 +37,7 @@ export interface GroupStatus {
    * INSCRITOS de verdade: participantes menos o bot e menos os números da
    * equipe (TEAM_NUMBERS).
    *
-   * `meta.size` conta todos os participantes e o bot é um deles — relatar o
+   * `meta.size` conta todos os participantes e o bot é um deles - relatar o
    * bruto fazia 10 grupos VAZIOS parecerem 10 inscritos. E quem opera também
    * costuma estar dentro do grupo, então some junto: com poucos membros, cada
    * número da equipe distorce a métrica em dezenas por cento.
@@ -52,7 +52,7 @@ export interface GroupsFile {
   updatedAt: string;
   /** Limite operacional usado (com margem sobre o teto real do WhatsApp). */
   limit: number;
-  /** Primeiro grupo com vaga — é pra cá que o botão do site aponta. */
+  /** Primeiro grupo com vaga - é pra cá que o botão do site aponta. */
   join: string | null;
   totalMembers: number;
   /** Soma de `people`: o número que vale pra saber se o funil está trazendo gente. */
@@ -88,7 +88,7 @@ export async function buildGroupStatus(
       })();
 
   if (niche && escolhidos.length === 0) {
-    logger.warn({ niche }, '[grupos] Nicho não existe em config/niches.json — status vazio.');
+    logger.warn({ niche }, '[grupos] Nicho não existe em config/niches.json - status vazio.');
   }
 
   const groupIds = [...new Set(escolhidos.flatMap((n) => n.groups))];
@@ -123,7 +123,7 @@ export async function buildGroupStatus(
   }
 
   // Ordena por menos cheio... não: mantém a ordem configurada e pega o PRIMEIRO
-  // com vaga — assim os grupos enchem em sequência (melhor pra moderação) em
+  // com vaga - assim os grupos enchem em sequência (melhor pra moderação) em
   // vez de espalhar gente por todos ao mesmo tempo.
   const next = groups.find((g) => !g.full && g.link);
 
@@ -140,7 +140,7 @@ export async function buildGroupStatus(
 /**
  * Grava o JSON na pasta que o site serve (escrita atômica).
  *
- * Com `slug`, escreve em <site.dir>/<slug>/groups.json — a pasta da landing
+ * Com `slug`, escreve em <site.dir>/<slug>/groups.json - a pasta da landing
  * daquele nicho. Sem slug, cai no caminho legado de site de nicho único.
  */
 export function writeGroupStatus(data: GroupsFile, slug?: string): string {
@@ -155,7 +155,7 @@ export function writeGroupStatus(data: GroupsFile, slug?: string): string {
  * Atualiza o status de TODAS as landings configuradas (uma por nicho).
  *
  * Sem config/landings.json, mantém o comportamento antigo: um único
- * groups.json na raiz do site. Devolve o status do nicho padrão — ou null se
+ * groups.json na raiz do site. Devolve o status do nicho padrão - ou null se
  * nada pôde ser atualizado.
  */
 export async function refreshGroupStatus(sock: WASocket): Promise<GroupsFile | null> {

@@ -6,7 +6,7 @@ import { fetchOfertas } from './ofertas';
 /**
  * Provider Mercado Livre.
  *
- * Sourcing: scraping da página pública de ofertas (ver ./ofertas.ts) — a API
+ * Sourcing: scraping da página pública de ofertas (ver ./ofertas.ts) - a API
  * oficial de busca foi restringida (403). Não precisa de OAuth: a página é
  * aberta e o link de afiliado é montado só com matt_word/matt_tool.
  *
@@ -18,7 +18,7 @@ export const name = 'mercadolivre';
 
 export async function fetchDeals(): Promise<Deal[]> {
   if (!config.mercadoLivre.enabled) {
-    logger.warn('[ML] ML_ENABLED=false — pulando Mercado Livre.');
+    logger.warn('[ML] ML_ENABLED=false - pulando Mercado Livre.');
     return [];
   }
 

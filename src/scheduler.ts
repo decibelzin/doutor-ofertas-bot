@@ -27,7 +27,7 @@ function nowTz(): DateTime {
   return DateTime.now().setZone(config.timezone);
 }
 
-/** Está dentro da janela de horário (ex.: 8h–22h)? */
+/** Está dentro da janela de horário (ex.: 8h-22h)? */
 export function isWithinWindow(): boolean {
   const h = nowTz().hour;
   return h >= config.schedule.startHour && h < config.schedule.endHour;
@@ -42,7 +42,7 @@ export function isWithinWindow(): boolean {
 function pausado(contexto: string): boolean {
   const p = lerPausa();
   if (!p) return false;
-  logger.info({ contexto, por: p.por, desde: p.desde, ate: p.ate }, '[Scheduler] Pausado — não vou postar.');
+  logger.info({ contexto, por: p.por, desde: p.desde, ate: p.ate }, '[Scheduler] Pausado - não vou postar.');
   return true;
 }
 
@@ -65,7 +65,7 @@ function capReached(): boolean {
 }
 
 /**
- * É um perfume POSTÁVEL? Aceita perfume de verdade (keyword/marca — INCLUI
+ * É um perfume POSTÁVEL? Aceita perfume de verdade (keyword/marca - INCLUI
  * árabes e nicho fora do banco Fragrantica, ex.: Lattafa/Armaf/Al Wataniah/
  * French Avenue) e corta maquiagem/cabelo. Antes o gate era só `isInBank`, que
  * cortava justamente o segmento quente que os concorrentes postam.
@@ -76,7 +76,7 @@ function isKnownPerfume(deal: Deal): boolean {
 
 /**
  * Uma oferta está elegível se: passa o filtro de qualidade E (não está no
- * cooldown OU voltou MUITO melhor — re-preço). O bypass de re-preço captura o
+ * cooldown OU voltou MUITO melhor - re-preço). O bypass de re-preço captura o
  * cenário mais quente: um perfume postado a 30% que HOJE caiu pra 55%.
  */
 function isEligible(deal: Deal, cooldownMs: number): boolean {
@@ -86,7 +86,7 @@ function isEligible(deal: Deal, cooldownMs: number): boolean {
 
 /**
  * Escolhe a oferta do nicho pro slot. NOVIDADE-FIRST: entre as elegíveis (já
- * ordenadas por desconto), prioriza as que NUNCA foram postadas — só re-serve
+ * ordenadas por desconto), prioriza as que NUNCA foram postadas - só re-serve
  * "evergreens" quando não há novidade. Maximiza cobertura/variedade e garante
  * que todo perfume qualificado vá ao ar ao menos 1x antes de repetir.
  */
@@ -121,7 +121,7 @@ export async function postNiche(
   // Troca o link do ML pelo curto (meli.la) quando disponível; senão mantém o matt.
   await enrichWithShortLink(deal);
 
-  // Baixa a imagem uma vez — reusada em todos os grupos do nicho. Usa a imagem
+  // Baixa a imagem uma vez - reusada em todos os grupos do nicho. Usa a imagem
   // da ficha curada (se houver) senão a do anúncio. Foto grande + legenda.
   const preset = resolvePreset(deal.title, deal.id);
   const image = await fetchDealImage(deal, preset?.imagem);
@@ -152,7 +152,7 @@ export async function postNowAll(opts: { ignoreWindow?: boolean } = {}): Promise
   }
 }
 
-// Primeiro post logo após o arranque (não espera um intervalo inteiro) — captação
+// Primeiro post logo após o arranque (não espera um intervalo inteiro) - captação
 // rápida + feedback imediato. Curto + pequeno stagger aleatório entre nichos.
 const KICKOFF_MIN_MS = 15 * 1000;
 const KICKOFF_SPREAD_MS = 25 * 1000;
@@ -178,7 +178,7 @@ function scheduleNiche(niche: Niche, opts: { immediate?: boolean } = {}): void {
 }
 
 // ---------------------------------------------------------------------------
-// Automação de CUPOM (perfume + cupom automático) — mesmo loop live do bot.
+// Automação de CUPOM (perfume + cupom automático) - mesmo loop live do bot.
 // ---------------------------------------------------------------------------
 
 let discovering = false;
@@ -188,7 +188,7 @@ let couponTurn = 0;
 /** Roda UMA descoberta de cupom (atualiza o cache). Não sobrepõe execuções. */
 async function runDiscoveryOnce(): Promise<void> {
   if (discovering) {
-    logger.debug('[Scheduler] Descoberta de cupom já em andamento — pulando.');
+    logger.debug('[Scheduler] Descoberta de cupom já em andamento - pulando.');
     return;
   }
   discovering = true;
@@ -251,7 +251,7 @@ async function postCouponTick(): Promise<void> {
   };
 
   // Cupom COM CÓDIGO vem primeiro: é o formato mais forte (igual ao "cupom
-  // relâmpago" dos concorrentes) e são poucos/rotativos — não desperdiçar.
+  // relâmpago" dos concorrentes) e são poucos/rotativos - não desperdiçar.
   const tryCode = async (): Promise<boolean> => {
     const r = await runCodeCouponPost(sock, {});
     if (r) {
@@ -289,7 +289,7 @@ function scheduleCouponPost(opts: { immediate?: boolean } = {}): void {
 
 /**
  * Checa se surgiram cupons com código NOVOS e dispara o anúncio "CUPOM LIBERADO"
- * (banner + lista de códigos, @all) — sozinho, sem intervenção.
+ * (banner + lista de códigos, @all) - sozinho, sem intervenção.
  */
 async function announceTick(): Promise<void> {
   if (!isWithinWindow()) return; // não acorda ninguém fora do horário
@@ -367,7 +367,7 @@ function scheduleGroupStatus(): void {
 export function startScheduler(): void {
   const niches = loadNiches();
   if (niches.length === 0) {
-    logger.warn('[Scheduler] Nenhum nicho configurado — nada a agendar.');
+    logger.warn('[Scheduler] Nenhum nicho configurado - nada a agendar.');
     return;
   }
   logger.info(
@@ -382,7 +382,7 @@ export function startScheduler(): void {
   /* Alerta de saúde (cookie expirado etc.).
    *
    * O sink é ligado SEMPRE. Antes ele só era instalado quando havia grupo de
-   * WhatsApp de admin configurado — e como esse campo estava vazio, todo
+   * WhatsApp de admin configurado - e como esse campo estava vazio, todo
    * alerta de degradação morria no log sem ninguém ver. Cada destino decide
    * sozinho se está configurado. */
   setAlertSink(async (msg, reason, detail) => {

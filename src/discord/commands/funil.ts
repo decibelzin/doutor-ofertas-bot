@@ -10,12 +10,12 @@ import { config } from '../../config';
 import { logger } from '../../logger';
 
 /**
- * /funil — visitas, cliques e taxa de conversão da landing.
+ * /funil - visitas, cliques e taxa de conversão da landing.
  *
  * Resposta efêmera: só quem rodou vê, e some sozinha.
  *
  * Só administradores: `setDefaultMemberPermissions` faz o Discord esconder o
- * comando de quem não tem a permissão — não é só uma checagem nossa.
+ * comando de quem não tem a permissão - não é só uma checagem nossa.
  */
 export const data = new SlashCommandBuilder()
   .setName('funil')

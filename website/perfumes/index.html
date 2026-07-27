@@ -1,9 +1,11 @@
 <!doctype html>
+<!-- GERADO por `npm run build-site`. NÃO edite à mão.
+     Conteúdo: config/landings.json · Estrutura: src/site/landing.template.html -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Doutor Ofertas — Perfume árabe e importado até 70% OFF</title>
+<title>Doutor Ofertas - Perfume árabe e importado até 70% OFF</title>
 <meta name="description" content="Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.">
 <meta name="theme-color" content="#0A0A0B">
 <!-- Diz ao motor que o documento JA e escuro: sem isso o force-dark do WebView
@@ -33,14 +35,14 @@
 <!-- ⚠️ Caminhos ABSOLUTOS (com / na frente), nao relativos.
      A pagina e servida em DUAS formas: /<slug>/ e /<slug> sem barra. Antes o
      /<slug> devolvia 301 pra versao com barra, e o fetcher do WhatsApp NAO
-     segue redirect — ele lia a resposta vazia do 301 e desistia do card. Como
+     segue redirect - ele lia a resposta vazia do 301 e desistia do card. Como
      e justamente essa a forma que a pessoa digita, o link saia sem imagem.
      Agora as duas devolvem 200, e caminho relativo resolveria errado na forma
      sem barra (./groups.json viraria /groups.json). -->
 <link rel="stylesheet" href="/styles.css">
 
 <!-- A fonte fica FORA do caminho critico. Com rel=stylesheet puro, nada na tela
-     era pintado ate o Google responder — em webview de app isso e tela preta.
+     era pintado ate o Google responder - em webview de app isso e tela preta.
      media=print faz o browser baixar sem bloquear; o onload promove pra all. -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap"
@@ -84,7 +86,7 @@
          ocupando espaco no flex.
 
          Se for reativar: NAO cite numero de turma. O botao aponta pro PRIMEIRO
-         grupo com vaga, entao quando a turma 1 enche a pessoa cai na 2 — e a
+         grupo com vaga, entao quando a turma 1 enche a pessoa cai na 2 - e a
          tela de convite mostra o nome do grupo em que ela realmente vai
          entrar. Numero fixo aqui = contradicao visivel no clique seguinte. -->
 
@@ -97,7 +99,7 @@
            (1) "ENTRAR NO GRUPO DO WHATSAPP" precisava de 338px e so havia 312 num
                aparelho de 390px: quebrava em duas linhas.
            (2) "GRATIS" saiu: ninguem supoe que entrar em grupo de WhatsApp custe
-               dinheiro, entao dizer isso LEVANTA a pergunta em vez de responder —
+               dinheiro, entao dizer isso LEVANTA a pergunta em vez de responder -
                e somado a "sem cadastro" eram tres defesas seguidas, que e como
                soa quem esta escondendo alguma coisa.
            O destino ja e sinalizado pelo icone e pelo rotulo virar
@@ -137,7 +139,7 @@
        navega no contexto do TOPO: o webview do Instagram/TikTok costuma
        engolir target="_blank"/window.open, e ai o toque nao produzia nada. */
     cta.addEventListener('click', (ev) => {
-      /* Rastro do clique. Endpoint na propria VPS respondendo 204 — o log do
+      /* Rastro do clique. Endpoint na propria VPS respondendo 204 - o log do
          nginx vira o contador, sem cookie, sem pixel de terceiro. O nicho vai
          junto pra dar pra comparar as landings entre si. */
       try {
@@ -166,7 +168,7 @@
       copiar.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(cta.href);
-          copiar.textContent = 'Link copiado — cole no WhatsApp';
+          copiar.textContent = 'Link copiado - cole no WhatsApp';
         } catch (e) {
           copiar.textContent = cta.href;
         }

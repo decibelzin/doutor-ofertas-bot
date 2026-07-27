@@ -29,12 +29,12 @@ export interface Preset {
   match?: string | string[];
   /** Exclusões: se QUALQUER uma aparecer, a ficha NÃO casa (desempata linhas iguais). */
   not?: string | string[];
-  /** Id do ML (ex.: "MLB123456") — casa cravado, sem ambiguidade. */
+  /** Id do ML (ex.: "MLB123456") - casa cravado, sem ambiguidade. */
   id?: string;
   nome: string;
   descricao?: string;
   imagem?: string;
-  /** Notas do perfume (3–5), exibidas na mensagem. Ex.: ["Bergamota","Pimenta","Ambroxan"]. */
+  /** Notas do perfume (3-5), exibidas na mensagem. Ex.: ["Bergamota","Pimenta","Ambroxan"]. */
   notas?: string[];
 }
 
@@ -46,7 +46,7 @@ interface PresetsConfig {
 const PRESETS_FILE = path.resolve('config/presets.json');
 const MAX_LEN = 70;
 
-// Marcas/linhas de perfume comuns — ajudam a achar o pedaço certo do título.
+// Marcas/linhas de perfume comuns - ajudam a achar o pedaço certo do título.
 const DEFAULT_BRANDS = [
   'Lancôme', 'O Boticário', 'Boticário', 'Eudora', 'Natura', 'Avon',
   'Lattafa', 'Armaf', 'Al Haramain', 'Afnan', 'Calvin Klein', 'Paco Rabanne',
@@ -136,7 +136,7 @@ function idMatches(p: Preset, idNorm: string): boolean {
   return Boolean(p.id && idNorm && idNorm.includes(norm(p.id)));
 }
 
-/** nº de palavras exigidas no `match` — quanto mais, mais específica a ficha. */
+/** nº de palavras exigidas no `match` - quanto mais, mais específica a ficha. */
 function specificity(p: Preset): number {
   return toGroups(p.match ?? p.nome).length;
 }
@@ -151,7 +151,7 @@ export function resolvePreset(rawTitle: string, itemId?: string): Preset | null 
 }
 
 // Termos de CONCENTRAÇÃO são ruído que colide com nomes de flanker (ex.: "Sauvage
-// Parfum" vs "Sauvage Eau de Parfum"). São removidos do título antes do match —
+// Parfum" vs "Sauvage Eau de Parfum"). São removidos do título antes do match -
 // logo, não servem como `match`/`not`; pra separar flanker "Parfum" use `id`.
 const CONCENTRATION =
   /\b(eau de parfum|eau de toilette|eau de cologne|edp|edt|edc|parfum|toilette|cologne|colonia|deo[\s-]?colonia)\b/g;
@@ -161,7 +161,7 @@ export function stripConcentration(hayNorm: string): string {
   return hayNorm.replace(CONCENTRATION, ' ');
 }
 
-/** Núcleo puro do matching (sem I/O) — recebe as fichas explicitamente. Testável. */
+/** Núcleo puro do matching (sem I/O) - recebe as fichas explicitamente. Testável. */
 export function pickPreset(presets: Preset[], rawTitle: string, itemId?: string): Preset | null {
   const hay = norm(rawTitle ?? '').replace(CONCENTRATION, ' ');
   const idNorm = norm(itemId ?? '');
@@ -200,7 +200,7 @@ function tidy(s: string): string {
   return s
     .replace(FLUFF_TOKENS, ' ')
     .replace(/\s{2,}/g, ' ')
-    .replace(/^[\s,;.\-–|]+|[\s,;.\-–|]+$/g, '')
+    .replace(/^[\s,;.\--|]+|[\s,;.\--|]+$/g, '')
     .trim();
 }
 

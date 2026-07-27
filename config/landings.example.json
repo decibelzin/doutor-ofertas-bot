@@ -4,7 +4,7 @@
     "",
     "Cada entrada vira uma página em <baseUrl>/<slug>/ com o SEU próprio og.png.",
     "É por isso que são páginas separadas e não uma só com seletor: o crawler do",
-    "WhatsApp não roda JS, então o card do link é fixo no HTML — uma página só",
+    "WhatsApp não roda JS, então o card do link é fixo no HTML - uma página só",
     "significaria o mesmo card genérico pra todo mundo.",
     "",
     "`niche` casa com o `name` de config/niches.json: é de lá que saem os grupos",
@@ -26,7 +26,7 @@
     {
       "slug": "perfumes",
       "niche": "perfumes",
-      "title": "Doutor Ofertas — Perfume árabe e importado até 70% OFF",
+      "title": "Doutor Ofertas - Perfume árabe e importado até 70% OFF",
       "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.",
       "headline": "PERFUME ÁRABE E IMPORTADO ATÉ",
       "highlight": "70% OFF",
@@ -48,7 +48,7 @@
     {
       "slug": "suplementos",
       "niche": "fitness",
-      "title": "Doutor Ofertas — Whey e creatina até 60% OFF",
+      "title": "Doutor Ofertas - Whey e creatina até 60% OFF",
       "description": "Ofertas e cupons de suplemento todo dia no WhatsApp. Growth, Max Titanium, Integralmédica e mais. Entrar é grátis.",
       "headline": "WHEY E CREATINA ATÉ",
       "highlight": "60% OFF",

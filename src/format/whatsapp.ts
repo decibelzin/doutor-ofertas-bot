@@ -3,7 +3,7 @@ import { resolvePreset, cleanTitle } from './title';
 import { lookupNotas } from './perfumes';
 
 /**
- * Formata um Deal na legenda de WhatsApp — estilo enxuto/premium (inspirado nos
+ * Formata um Deal na legenda de WhatsApp - estilo enxuto/premium (inspirado nos
  * canais de referência), com foco no desconto e no link.
  *
  * Com FICHA curada (config/presets.json): usa a descrição chamativa como

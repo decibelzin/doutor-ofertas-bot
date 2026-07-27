@@ -23,7 +23,7 @@ import type { Deal } from './deal';
 /**
  * Núcleo COMPARTILHADO da automação de cupom: descoberta (varre → cache) e
  * postagem (escolhe → posta). Usado pelos CLIs (discover-coupons,
- * post-perfume-coupon) E pelo scheduler (modo live). Sem process.exit aqui —
+ * post-perfume-coupon) E pelo scheduler (modo live). Sem process.exit aqui -
  * cada chamador decide o que fazer com o resultado.
  */
 
@@ -63,7 +63,7 @@ export function loadCouponCache(): CouponCacheFile | null {
   try {
     return JSON.parse(raw) as CouponCacheFile;
   } catch {
-    logger.warn({ file: CACHE_FILE }, '[coupon] Cache ilegível (parcial/corrompido) — ignorando.');
+    logger.warn({ file: CACHE_FILE }, '[coupon] Cache ilegível (parcial/corrompido) - ignorando.');
     return null;
   }
 }
@@ -140,7 +140,7 @@ export async function refreshCouponCache(opts: RefreshOptions = {}): Promise<Ref
   if (result.coupons.length === 0 && (result.authFailed || result.errors > 0) && prior > 0) {
     logger.warn(
       { authFailed: result.authFailed, erros: result.errors, cacheAntigo: prior },
-      '[coupon] Descoberta degradou e não achou nada — PRESERVANDO cache anterior.'
+      '[coupon] Descoberta degradou e não achou nada - PRESERVANDO cache anterior.'
     );
     return {
       written: false,
@@ -148,7 +148,7 @@ export async function refreshCouponCache(opts: RefreshOptions = {}): Promise<Ref
       candidates: result.candidates,
       errors: result.errors,
       authFailed: result.authFailed,
-      reason: 'degradado — cache preservado',
+      reason: 'degradado - cache preservado',
     };
   }
 
@@ -172,7 +172,7 @@ export async function refreshCouponCache(opts: RefreshOptions = {}): Promise<Ref
 // Postagem (escolhe cupom+produto → posta nos grupos de perfume)
 // ---------------------------------------------------------------------------
 
-/** O ML manda expiração como timestamp INGÊNUO em UTC — parseia como UTC. */
+/** O ML manda expiração como timestamp INGÊNUO em UTC - parseia como UTC. */
 function notExpired(c: PerfumeCoupon): boolean {
   const exp = DateTime.fromISO(c.expiration, { zone: 'utc' });
   return !exp.isValid || exp > DateTime.now();
@@ -232,7 +232,7 @@ export async function runCouponPost(
 ): Promise<CouponPostResult | null> {
   const cache = loadCouponCache();
   if (!cache) {
-    logger.warn('[coupon] Sem cache de cupons — rode a descoberta antes.');
+    logger.warn('[coupon] Sem cache de cupons - rode a descoberta antes.');
     return null;
   }
   const chosen = pickCoupon(cache, opts.couponId ?? null);

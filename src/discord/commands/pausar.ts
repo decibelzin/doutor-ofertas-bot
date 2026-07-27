@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import { montarPausar } from '../acoes/pausa';
 
-/** /pausar — freio de mão da postagem. */
+/** /pausar - freio de mão da postagem. */
 export const data = new SlashCommandBuilder()
   .setName('pausar')
   .setDescription('Para de postar ofertas, cupons e anúncios')

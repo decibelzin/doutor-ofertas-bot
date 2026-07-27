@@ -23,7 +23,7 @@ export interface PostRecord {
   title: string;
   price: number;
   discount: number;
-  /** Id da mensagem enviada (Baileys) — liga o post à reação de moderação. */
+  /** Id da mensagem enviada (Baileys) - liga o post à reação de moderação. */
   msgId?: string;
 }
 
@@ -65,7 +65,7 @@ class Store {
     try {
       raw = fs.readFileSync(this.file, 'utf8');
     } catch {
-      return []; // arquivo ainda não existe (1ª execução) — normal.
+      return []; // arquivo ainda não existe (1ª execução) - normal.
     }
     try {
       const parsed = JSON.parse(raw) as PostRecord[];
@@ -73,7 +73,7 @@ class Store {
       return Array.isArray(parsed) ? parsed.filter((r) => r.ts >= cutoff) : [];
     } catch {
       // Arquivo EXISTE mas não parseia (corrupção/escrita parcial). NÃO zerar o
-      // dedup em silêncio — isso causaria repost em massa (risco de ban). Preserva
+      // dedup em silêncio - isso causaria repost em massa (risco de ban). Preserva
       // o suspeito num .bak e alerta ALTO; segue com histórico vazio só nesta
       // sessão (a escrita atômica torna esse caso raríssimo).
       const bak = `${this.file}.corrupt-${Date.now()}.bak`;
@@ -84,7 +84,7 @@ class Store {
       }
       logger.error(
         { file: this.file, bak },
-        '[Store] posted.json ILEGÍVEL (corrompido). Preservado em .bak. Dedup vazio nesta sessão — RISCO DE REPOST; verifique o .bak.'
+        '[Store] posted.json ILEGÍVEL (corrompido). Preservado em .bak. Dedup vazio nesta sessão - RISCO DE REPOST; verifique o .bak.'
       );
       return [];
     }
@@ -123,7 +123,7 @@ class Store {
    * postado (re-preço quente). Usado por oferta e cupom pra decidir o dedup.
    */
   canPostNow(dealId: string, discountPercent: number, withinMs: number): boolean {
-    if (this.isBlocked(dealId)) return false; // vetado à mão (❌) — nunca posta
+    if (this.isBlocked(dealId)) return false; // vetado à mão (❌) - nunca posta
     if (!this.wasPostedRecently(dealId, withinMs)) return true;
     const bypass = config.dedup.repriceBypassPoints;
     if (bypass <= 0) return false;
@@ -138,7 +138,7 @@ class Store {
 
   /**
    * Quantas OFERTAS distintas foram postadas desde `sinceMs` (1 oferta enviada a
-   * N grupos conta 1, não N). É essa a métrica dos tetos anti-ban — senão um
+   * N grupos conta 1, não N). É essa a métrica dos tetos anti-ban - senão um
    * único post pra 10 grupos já estouraria um teto de 8 e travaria a cadência.
    */
   countDealsSince(sinceMs: number): number {

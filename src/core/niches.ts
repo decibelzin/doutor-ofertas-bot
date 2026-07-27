@@ -23,7 +23,7 @@ export interface Niche {
   shopee?: { keywords?: string[] };
   /** Override opcional do desconto mínimo do nicho. */
   minDiscountPercent?: number;
-  /** Override opcional da avaliação mínima (0–5). */
+  /** Override opcional da avaliação mínima (0-5). */
   minRating?: number;
   /** Override opcional do intervalo (min) entre posts deste nicho. */
   intervalMinutes?: number;
@@ -51,11 +51,11 @@ export function loadNiches(): Niche[] {
   if (config.whatsapp.groupIds.length > 0) {
     logger.info(
       { fonte: 'WHATSAPP_GROUP_IDS (.env, fallback)', grupos: config.whatsapp.groupIds.length },
-      '[Niches] Sem config/niches.json — usando nicho "geral" com os grupos do .env.'
+      '[Niches] Sem config/niches.json - usando nicho "geral" com os grupos do .env.'
     );
     return [{ name: 'geral', groups: config.whatsapp.groupIds, ml: { categories: [] } }];
   }
 
-  logger.warn('[Niches] Nenhum nicho configurado e WHATSAPP_GROUP_IDS vazio — nada a postar.');
+  logger.warn('[Niches] Nenhum nicho configurado e WHATSAPP_GROUP_IDS vazio - nada a postar.');
   return [];
 }

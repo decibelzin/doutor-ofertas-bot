@@ -49,9 +49,9 @@ function shortDate(iso: string): string | null {
 
 /**
  * Preço final estimado APÓS o cupom automático. Retorna null quando NÃO dá pra
- * estimar com segurança — de propósito, pra nunca anunciar preço enganoso:
+ * estimar com segurança - de propósito, pra nunca anunciar preço enganoso:
  *  - produto abaixo da compra mínima;
- *  - cupom de % sem TETO conhecido (terms ausente) — sem o teto o desconto
+ *  - cupom de % sem TETO conhecido (terms ausente) - sem o teto o desconto
  *    poderia ser bem menor que o % cheio, e mostraríamos um preço baixo demais.
  */
 export function estimateFinalPrice(deal: Deal, coupon: PerfumeCoupon): number | null {
@@ -108,7 +108,7 @@ export function formatPerfumeCoupon(
   }
 
   // Linha do cupom automático. Quando dá pra estimar o preço final, mostra o
-  // desconto EFETIVO (após teto) casado com o preço final — nunca "+50%" ao lado
+  // desconto EFETIVO (após teto) casado com o preço final - nunca "+50%" ao lado
   // de um preço que reflete só R$ 30 de teto. Sem estimativa segura, mostra só o
   // desconto nominal do cupom, sem preço final (evita número enganoso).
   const final = estimateFinalPrice(deal, coupon);
@@ -145,7 +145,7 @@ export function formatPerfumeCoupon(
 /**
  * Legenda de PERFUME + CUPOM PÚBLICO do ML (o "cupom relâmpago" dos concorrentes).
  * Diferente do cupom de vendedor (auto-aplicado), este o comprador ATIVA na
- * página/app do ML — por isso a mensagem manda ativar, sem prometer preço final
+ * página/app do ML - por isso a mensagem manda ativar, sem prometer preço final
  * (o desconto depende da compra mínima e do teto do cupom).
  */
 export function formatPublicCouponPost(
@@ -181,7 +181,7 @@ export function formatPublicCouponPost(
 
   // Condições reais do cupom (texto pronto do ML) + como ativar. Esses cupons
   // não têm código digitável (são de clicar em "Aplicar"), então mandamos o
-  // LINK do cupom — é o equivalente do "código" pro cliente.
+  // LINK do cupom - é o equivalente do "código" pro cliente.
   const cond = [coupon.minAmountText, coupon.capAmountText].filter(Boolean).join(' · ');
   blocks.push(`🎟️ *Cupom ${coupon.title}*${cond ? `\n_${cond}_` : ''}`);
   if (coupon.activationUrl) {
@@ -228,7 +228,7 @@ export function formatCodeCouponPost(
     blocks.push(`*R$ ${price(deal.priceNow)}*`);
   }
 
-  // O código em destaque — é o que o cliente precisa copiar.
+  // O código em destaque - é o que o cliente precisa copiar.
   const cond = [coupon.minAmountText, coupon.capAmountText].filter(Boolean).join(' · ');
   blocks.push(`🎟️ *Cupom: ${coupon.code}* (${coupon.title.trim()})${cond ? `\n_${cond}_` : ''}`);
   if (coupon.expirationText) blocks.push(`⏳ _${coupon.expirationText}_`);

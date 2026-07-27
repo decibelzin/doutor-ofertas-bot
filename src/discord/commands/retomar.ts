@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import { montarRetomar } from '../acoes/pausa';
 
-/** /retomar — desfaz a pausa. */
+/** /retomar - desfaz a pausa. */
 export const data = new SlashCommandBuilder()
   .setName('retomar')
   .setDescription('Volta a postar')

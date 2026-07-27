@@ -63,7 +63,7 @@ export function formatCouponAnnouncement(coupons: SpecialCoupon[], feed: FeedCou
   ];
 
   const lines: string[] = [];
-  // Cupons de site inteiro (agregador) primeiro — são os mais fortes.
+  // Cupons de site inteiro (agregador) primeiro - são os mais fortes.
   for (const c of feed) lines.push(feedLine(c));
   for (const c of coupons) {
     const cond = c.minAmountText ? ` ${c.minAmountText.toLowerCase()}` : '';
@@ -96,7 +96,7 @@ export async function announceNewCoupons(
   opts: { dry?: boolean; force?: boolean } = {}
 ): Promise<AnnounceResult | null> {
   const coupons = await fetchSpecialCoupons();
-  // Cupons de SITE INTEIRO dos agregadores (ALLSITE25, TODOSITE25...) — os mais
+  // Cupons de SITE INTEIRO dos agregadores (ALLSITE25, TODOSITE25...) - os mais
   // fortes e os que os concorrentes postam. Top N pra mensagem não virar lista.
   // Prioriza os CONFIRMADOS por 2+ agregadores (menor risco de código morto);
   // se não houver confirmados suficientes, completa com os melhores restantes.
@@ -125,12 +125,12 @@ export async function announceNewCoupons(
   if (!opts.force && !opts.dry && state.lastAnnounceAt > 0 && since < minGapMs) {
     logger.info(
       { faltamMin: Math.round((minGapMs - since) / 60000), novos: newOnes.map((c) => c.code) },
-      '[anúncio-cupom] Código novo detectado, mas dentro do intervalo mínimo — adiando.'
+      '[anúncio-cupom] Código novo detectado, mas dentro do intervalo mínimo - adiando.'
     );
     return null;
   }
 
-  // Anuncia TODOS os vigentes (não só os novos) — a mensagem é uma lista.
+  // Anuncia TODOS os vigentes (não só os novos) - a mensagem é uma lista.
   const text = formatCouponAnnouncement(coupons, feed);
   const groups = allGroups();
 
@@ -143,7 +143,7 @@ export async function announceNewCoupons(
     return null;
   }
 
-  // Banner fixo (opcional) — igual ao "CUPOM LIBERADO" dos concorrentes.
+  // Banner fixo (opcional) - igual ao "CUPOM LIBERADO" dos concorrentes.
   let banner: Buffer | null = null;
   const bannerPath = config.coupon.bannerPath;
   if (bannerPath && fs.existsSync(bannerPath)) {
@@ -152,7 +152,7 @@ export async function announceNewCoupons(
   } else if (bannerPath) {
     logger.warn(
       { bannerPath },
-      '[anúncio-cupom] Banner NÃO encontrado nesse caminho — vai sair só texto. Salve a imagem lá.'
+      '[anúncio-cupom] Banner NÃO encontrado nesse caminho - vai sair só texto. Salve a imagem lá.'
     );
   }
 

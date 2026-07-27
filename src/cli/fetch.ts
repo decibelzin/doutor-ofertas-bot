@@ -1,6 +1,6 @@
 /**
  * Teste: busca ofertas reais dos providers ativos e imprime JÁ FORMATADAS como
- * sairiam no WhatsApp — SEM conectar no WhatsApp e SEM postar nada.
+ * sairiam no WhatsApp - SEM conectar no WhatsApp e SEM postar nada.
  *
  *   npm run fetch        # 10 melhores
  *   npm run fetch 5      # 5 melhores

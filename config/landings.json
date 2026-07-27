@@ -1,7 +1,7 @@
 {
   "_comment": [
     "Conteúdo das landings, uma por nicho. Versionado de propósito: é copy de",
-    "marketing, não segredo — diferente de config/niches.json, que carrega os",
+    "marketing, não segredo - diferente de config/niches.json, que carrega os",
     "IDs dos grupos e fica fora do git.",
     "",
     "O campo `niche` liga esta landing ao nicho de config/niches.json pelo",
@@ -19,7 +19,7 @@
       "slug": "perfumes",
       "niche": "perfumes",
 
-      "title": "Doutor Ofertas — Perfume árabe e importado até 70% OFF",
+      "title": "Doutor Ofertas - Perfume árabe e importado até 70% OFF",
       "description": "Ofertas e cupons de perfume todo dia no WhatsApp. Lattafa, Afnan, Armaf, Al Haramain e mais. Entrar é grátis.",
 
       "headline": "PERFUME ÁRABE E IMPORTADO ATÉ",

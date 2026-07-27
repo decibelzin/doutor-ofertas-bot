@@ -8,7 +8,7 @@ import { buildAffiliateUrl } from './affiliate';
 /**
  * Sourcing de ofertas do Mercado Livre via SCRAPING da página pública de
  * ofertas (mercadolivre.com.br/ofertas). A API oficial de busca morreu (403),
- * então raspamos o HTML — que é renderizado no servidor e traz preço "de/por",
+ * então raspamos o HTML - que é renderizado no servidor e traz preço "de/por",
  * desconto, título e link direto no markup (componente "polycard" do ML).
  *
  * O link de cada produto é limpo (tira o tracking do ML) e recebe a nossa tag
@@ -49,7 +49,7 @@ export function parseOfertasHtml(html: string): Deal[] {
     const href = linkEl.attr('href') || '';
     const cleanUrl = href.split('?')[0].split('#')[0];
     // Catálogo: /p/MLB12345678. Anúncio de vendedor: /MLB-1234567890-nome (com
-    // hífen) — comum nas lojas árabes/nacionais dos cupons; o `-?` tolera os dois.
+    // hífen) - comum nas lojas árabes/nacionais dos cupons; o `-?` tolera os dois.
     const idMatch = cleanUrl.match(/MLB-?(\d+)/);
     if (!idMatch) return;
     const mlbId = `MLB${idMatch[1]}`;
@@ -87,7 +87,7 @@ export function parseOfertasHtml(html: string): Deal[] {
 
 /**
  * Baixa a página de ofertas e devolve os Deals. Se `categoryId` for passado
- * (ex.: "MLB6284" = Perfumes), raspa a página daquela categoria — é assim que
+ * (ex.: "MLB6284" = Perfumes), raspa a página daquela categoria - é assim que
  * cada nicho puxa suas ofertas.
  */
 export async function fetchOfertas(categoryId?: string): Promise<Deal[]> {

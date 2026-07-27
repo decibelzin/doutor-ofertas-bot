@@ -3,14 +3,14 @@ import path from 'node:path';
 import { logger } from '../logger';
 
 /**
- * LANDINGS — uma página por nicho, servida em /<slug>.
+ * LANDINGS - uma página por nicho, servida em /<slug>.
  *
  * Por que uma por nicho e não uma só com seletor: o crawler do WhatsApp não
  * executa JS, então o og:image é fixo no HTML. Página única = card genérico
  * pra todo mundo, e é no card que o clique é ganho. Além disso um seletor
  * insere uma decisão antes do único toque que a página existe pra provocar.
  *
- * O conteúdo mora em config/landings.json (versionado — é copy, não segredo).
+ * O conteúdo mora em config/landings.json (versionado - é copy, não segredo).
  * Os grupos continuam vindo de config/niches.json (fora do git), ligados por
  * `niche` → `name`.
  */
@@ -29,7 +29,7 @@ export interface LandingOg {
 export interface Landing {
   /** Vira a URL: /<slug>. Também é o nome da pasta em website/. */
   slug: string;
-  /** `name` do nicho em config/niches.json — de onde saem os grupos. */
+  /** `name` do nicho em config/niches.json - de onde saem os grupos. */
   niche: string;
 
   title: string;
@@ -70,7 +70,7 @@ const OBRIGATORIOS: (keyof Landing)[] = [
 /**
  * Lê e valida config/landings.json.
  *
- * Devolve null quando o arquivo não existe — é o sinal de "modo antigo": uma
+ * Devolve null quando o arquivo não existe - é o sinal de "modo antigo": uma
  * landing só, servida na raiz. Assim quem ainda não migrou não quebra.
  */
 export function loadLandings(): LandingsFile | null {

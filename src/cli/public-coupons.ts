@@ -5,7 +5,7 @@
  *   npm run public-coupons          # lista os cupons de perfumaria vigentes
  *
  * São cupons do próprio Mercado Livre (não da nossa conta de afiliado): valem
- * pra qualquer comprador, ativados na página/app do ML. Descoberta automática —
+ * pra qualquer comprador, ativados na página/app do ML. Descoberta automática -
  * sem código fixo no bot.
  */
 import { logger } from '../logger';
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   const special = await fetchSpecialCoupons({ ttlMs: 0 });
   console.log(`\n===== CUPONS COM CÓDIGO (${special.length}) =====`);
   for (const c of special) {
-    console.log(`\n🎟️  *${c.code}*  — ${c.title}`);
+    console.log(`\n🎟️  *${c.code}*  - ${c.title}`);
     const cond = [c.minAmountText, c.capAmountText].filter(Boolean).join(' · ');
     if (cond) console.log(`    ${cond}`);
     if (c.expirationText) console.log(`    ⏳ ${c.expirationText}`);

@@ -6,12 +6,12 @@ import { lerPausa } from '../../core/pausa';
 import { OURO, VERDE, VERMELHO, agora, minutosAtras } from './comum';
 
 /**
- * STATUS — a resposta pra "está tudo bem?".
+ * STATUS - a resposta pra "está tudo bem?".
  *
  * O bot do Discord é um processo separado do bot do WhatsApp, então ele não
  * pergunta nada pro outro: lê os MESMOS arquivos que o outro escreve
  * (posted.json, groups.json, pausa.json) e sonda o site por HTTP. Isso é
- * melhor que IPC aqui — se o processo do WhatsApp estiver morto, um IPC daria
+ * melhor que IPC aqui - se o processo do WhatsApp estiver morto, um IPC daria
  * timeout, enquanto o arquivo parado no tempo denuncia exatamente isso.
  */
 
@@ -106,7 +106,7 @@ export async function montarStatus(): Promise<EmbedBuilder> {
   const problema = !site.ok || grupoParado || !grupos;
   const e = new EmbedBuilder()
     .setColor(problema ? VERMELHO : pausa ? OURO : VERDE)
-    .setTitle(pausa ? '⏸️ Status — PAUSADO' : problema ? '⚠️ Status — algo errado' : '✅ Status — tudo certo')
+    .setTitle(pausa ? '⏸️ Status - PAUSADO' : problema ? '⚠️ Status - algo errado' : '✅ Status - tudo certo')
     .setTimestamp(new Date());
 
   if (pausa) {
@@ -122,11 +122,11 @@ export async function montarStatus(): Promise<EmbedBuilder> {
     {
       name: 'Postagem',
       value:
-        `Janela ${config.schedule.startHour}h–${config.schedule.endHour}h — ` +
+        `Janela ${config.schedule.startHour}h-${config.schedule.endHour}h - ` +
         `**${dentroDaJanela() ? 'aberta' : 'fechada'}**\n` +
         `Nesta hora: **${naHora}/${config.schedule.maxPostsPerHour}**\n` +
         `Hoje: **${noDia}${teto}**\n` +
-        `Última: ${minSemPostar === null ? '—' : minutosAtras(ultimo)}`,
+        `Última: ${minSemPostar === null ? '-' : minutosAtras(ultimo)}`,
       inline: true,
     },
     {
@@ -135,7 +135,7 @@ export async function montarStatus(): Promise<EmbedBuilder> {
         ? `**${grupos.groups.length}** grupos · **${pessoas(grupos)}** pessoas\n` +
           `Botão do site aponta pra: ${grupos.join ? '**ok**' : '**NENHUM**'}\n` +
           `Atualizado ${minutosAtras(new Date(grupos.updatedAt).getTime())}` +
-          (grupoParado ? '\n⚠️ **parado — bot do WhatsApp caiu?**' : '')
+          (grupoParado ? '\n⚠️ **parado - bot do WhatsApp caiu?**' : '')
         : `⚠️ não consegui ler\n\`${arqGrupos}\``,
       inline: true,
     },

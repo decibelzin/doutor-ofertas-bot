@@ -4,12 +4,12 @@ import { writeFileAtomic } from '../util/atomic';
 import { logger } from '../logger';
 
 /**
- * PAUSA DE POSTAGEM — freio de mão, acionável de fora do processo.
+ * PAUSA DE POSTAGEM - freio de mão, acionável de fora do processo.
  *
  * O bot do WhatsApp e o bot do Discord são processos SEPARADOS, então não dá
  * pra pausar mexendo numa variável: o Discord escreve este arquivo e o
  * scheduler lê antes de cada ciclo. Arquivo em vez de socket/IPC porque
- * sobrevive a restart — pausar e o serviço reiniciar não pode voltar a postar
+ * sobrevive a restart - pausar e o serviço reiniciar não pode voltar a postar
  * sozinho, que é justamente quando você quer o freio valendo.
  *
  * Sem arquivo = rodando. É o estado padrão e o mais seguro de assumir.

@@ -3,7 +3,7 @@ import { lerPausa, pausar, retomar } from '../../core/pausa';
 import { OURO, VERDE, minutosAtras, agora } from './comum';
 
 /**
- * PAUSAR / RETOMAR — freio de mão da postagem.
+ * PAUSAR / RETOMAR - freio de mão da postagem.
  *
  * Escreve `data/pausa.json`, que o scheduler do bot do WhatsApp lê antes de
  * cada ciclo. Processos separados, estado em arquivo: pausa sobrevive a
@@ -19,7 +19,7 @@ export function montarPausar(por: string, opts: { minutos?: number; motivo?: str
       'O bot **não vai postar** ofertas, cupons nem anúncios até retomar.\n' +
         (e.ate
           ? `Retoma sozinho ${agora(new Date(e.ate).getTime())}.`
-          : 'Sem prazo — só volta no **Retomar**.')
+          : 'Sem prazo - só volta no **Retomar**.')
     )
     .addFields({ name: 'Por', value: por, inline: true })
     .setFooter({ text: 'vale também pro post manual: pausa é parada dura' })
@@ -34,7 +34,7 @@ export function montarRetomar(por: string): EmbedBuilder {
     return new EmbedBuilder()
       .setColor(VERDE)
       .setTitle('▶️ Já estava rodando')
-      .setDescription('Não havia pausa ativa — nada mudou.');
+      .setDescription('Não havia pausa ativa - nada mudou.');
   }
 
   return new EmbedBuilder()
@@ -47,7 +47,7 @@ export function montarRetomar(por: string): EmbedBuilder {
     .setTimestamp(new Date());
 }
 
-/** Estado atual, sem alterar nada — usado pelo painel e pelo /status. */
+/** Estado atual, sem alterar nada - usado pelo painel e pelo /status. */
 export function montarEstadoPausa(): EmbedBuilder {
   const p = lerPausa();
   if (!p) {

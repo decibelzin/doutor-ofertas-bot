@@ -1,4 +1,4 @@
-# systemd — serviços de produção
+# systemd - serviços de produção
 
 Retrato do que roda na VPS. Dois processos **separados de propósito**: a sessão
 do Baileys é frágil e cara de recuperar (reconectar é o momento de maior risco),
@@ -14,7 +14,7 @@ systemctl status doutor-ofertas-discord
 journalctl -u doutor-ofertas-discord -f
 ```
 
-Não é aplicado por `npm run deploy` — o script só faz `systemctl restart` do que
+Não é aplicado por `npm run deploy` - o script só faz `systemctl restart` do que
 já existe. Pra instalar ou alterar uma unit:
 
 ```bash
@@ -26,7 +26,7 @@ ssh root@168.231.89.180 'systemctl daemon-reload && systemctl restart doutor-ofe
 
 `StartLimitBurst` e `StartLimitIntervalSec` pertencem a **`[Unit]`**, não a
 `[Service]`. No lugar errado o systemd só avisa `Unknown key ... ignoring` e
-segue — o limite de reinício simplesmente não existe, e um serviço em crash-loop
+segue - o limite de reinício simplesmente não existe, e um serviço em crash-loop
 reinicia pra sempre sem ninguém perceber.
 
 O `.env` é lido pelo próprio app (`dotenv/config`), não por `EnvironmentFile`:

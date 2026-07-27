@@ -4,7 +4,7 @@ import { norm, hasWord, stripConcentration } from './title';
 
 /**
  * Enriquecimento AUTOMÁTICO de notas a partir de um banco local de perfumes
- * (data/perfumes.json, derivado do dataset doevent/perfume — Fragrantica).
+ * (data/perfumes.json, derivado do dataset doevent/perfume - Fragrantica).
  *
  * Casa o título raspado do ML → o perfume certo no banco → devolve as notas (PT).
  * Reusa a mesma lógica do matcher de ficha (palavra inteira, mais específico
@@ -46,7 +46,7 @@ let brands: Map<string, Brand> | null = null;
 let tokenToBrand: Map<string, string[]> | null = null;
 
 // "Pour Homme/Femme", "For Men" etc. são descritores de gênero que o dataset mete
-// no nome mas o título do ML não tem. (Só a FRASE — "Homme" sozinho é nome, ex.: Dior Homme.)
+// no nome mas o título do ML não tem. (Só a FRASE - "Homme" sozinho é nome, ex.: Dior Homme.)
 const NOISE = /\b(pour homme|pour femme|pour elle|pour lui|for men|for women|for him|for her|for man|for woman)\b/g;
 
 /** Normaliza + tira elisão francesa ("l'eau"->"eau") + "pour homme" + concentração. */
@@ -89,7 +89,7 @@ function load(): void {
       }
     }
     const bSet = new Set(b.tokens);
-    // toks() já tira concentração/elisão do nome (o título também vem assim) —
+    // toks() já tira concentração/elisão do nome (o título também vem assim) -
     // senão "Sauvage Eau de Parfum" nunca casaria com o título raspado.
     const nameTokens = toks(r.nome).filter((t) => !bSet.has(t));
     if (nameTokens.length === 0) continue; // nome == marca (ou só concentração): não distingue

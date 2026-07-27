@@ -1,5 +1,5 @@
 /**
- * Testa a geração do link curto (meli.la) do Mercado Livre — isolado, sem
+ * Testa a geração do link curto (meli.la) do Mercado Livre - isolado, sem
  * WhatsApp. Prova que seu cookie/csrf estão válidos e o endpoint responde.
  *
  *   npm run ml-link -- https://www.mercadolivre.com.br/.../p/MLB123456

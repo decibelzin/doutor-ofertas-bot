@@ -16,18 +16,18 @@
     {
       "match": ["212", "vip", "men"],
       "not": ["black", "party"],
-      "nome": "212 VIP Men — Carolina Herrera",
+      "nome": "212 VIP Men - Carolina Herrera",
       "descricao": "🖤 O CLÁSSICO DA NOITE"
     },
     {
       "match": ["la vie est belle"],
       "not": ["intensement", "intense", "absolu", "soleil"],
-      "nome": "La Vie Est Belle — Lancôme",
+      "nome": "La Vie Est Belle - Lancôme",
       "descricao": "💗 O CORINGA DAS MULHERES"
     },
     {
       "id": "MLB1234567890",
-      "nome": "Sauvage Elixir — Dior",
+      "nome": "Sauvage Elixir - Dior",
       "descricao": "🌑 O MONSTRO DE PROJEÇÃO"
     }
   ],

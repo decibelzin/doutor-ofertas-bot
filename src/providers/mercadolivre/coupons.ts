@@ -10,10 +10,10 @@ import { norm } from '../../format/title';
  * DESCOBERTA DE CUPONS DE PERFUMARIA (painel de afiliado do ML).
  *
  * Contexto (ver docs/handoff-cupons.md): os cupons dessa conta são todos do tipo
- * PRODUCT_DISCOUNT — aplicados AUTOMATICAMENTE no carrinho, sem código pra
+ * PRODUCT_DISCOUNT - aplicados AUTOMATICAMENTE no carrinho, sem código pra
  * digitar. A API do painel não filtra por categoria, então a descoberta é:
  *
- *   1. varrer a LISTA de cupons (GET /coupons?page=N — barato, só `page` funciona)
+ *   1. varrer a LISTA de cupons (GET /coupons?page=N - barato, só `page` funciona)
  *   2. filtrar sellers que "parecem" perfumaria (nome bate watchlist)
  *   3. resolver a URL de produtos (GET /coupon-search-url) SÓ dos candidatos
  *   4. raspar a listing (é o mesmo HTML de /ofertas → parseOfertasHtml)
@@ -102,7 +102,7 @@ export interface PerfumeCoupon {
  * Palavras que denunciam produto de perfumaria no título.
  * ⚠️ Os termos abertos são PREFIXOS (perfum→perfume/perfumes/perfumaria), então
  * levam `\b` só à ESQUERDA. Um `\b` à direita quebraria o match ("perfum" seguido
- * de "e" não é limite de palavra) — foi um bug real que rejeitava "Perfume ...".
+ * de "e" não é limite de palavra) - foi um bug real que rejeitava "Perfume ...".
  */
 const PERFUME_KEYWORD =
   /(\bperfum|\bparfum|\beau de\b|\bedt\b|\bedp\b|\bcol[oô]nia|\bfragr[aâ]ncia|\bbody spray\b|\bdeo[\s-]?col)/i;
@@ -116,14 +116,14 @@ const NON_PERFUME_KW =
   /\b(batom|gloss|corretivo|r[ií]mel|m[aá]scara de c[ií]lios|delineador|sombra|blush|p[oó] compacto|p[oó] facial|base l[ií]quida|esmalte|shampoo|condicionador|sabonete|hidratante|creme|s[eé]rum|escova|pincel|kit maquiagem|maquiagem|difusor|aromatizador|vela perfumada|amaciante|desinfetante|detergente|bolsa|bolsas|mochila|carteira|pochete|necessaire|shoulder bag|tiracolo|mala|rel[oó]gio|[oó]culos|camiseta|camisa|blusa|cal[cç]a|bermuda|short|vestido|jaqueta|t[eê]nis|sapato|chinelo|sand[aá]lia|bon[eé]|cinto|meia|cueca|toalha)\b/i;
 
 /**
- * Volume (ml/L) no título. Perfume é vendido POR VOLUME — praticamente todo
+ * Volume (ml/L) no título. Perfume é vendido POR VOLUME - praticamente todo
  * anúncio traz "100ml", "50 ml" etc. Usamos isso como corroboração quando o
  * único sinal é a MARCA (que também vende bolsa, relógio, roupa…).
  */
 const HAS_VOLUME = /\b\d{1,4}\s?(ml|mls|l|litros?)\b/i;
 
 /**
- * Marcas/casas de perfume (inclui ÁRABES — decisão do usuário: incluir mesmo
+ * Marcas/casas de perfume (inclui ÁRABES - decisão do usuário: incluir mesmo
  * fora do banco Fragrantica). Usadas tanto pra reconhecer PRODUTO quanto pra
  * reconhecer SELLER de perfumaria pelo nome.
  */
@@ -145,7 +145,7 @@ const SELLER_PATTERNS = /(perfum|fragran|essenc|arom|scent|beleza|cosmet|import|
 
 /**
  * A marca aparece como PALAVRA/FRASE inteira no texto normalizado? Boundary por
- * caractere não-alfanumérico — evita substring espúria (ex.: "avon" ⊄ "pavoni",
+ * caractere não-alfanumérico - evita substring espúria (ex.: "avon" ⊄ "pavoni",
  * que casava a loja de autopeças "Pavoni" com a marca Avon).
  */
 function brandPresent(hayNorm: string, brand: string): boolean {
@@ -167,7 +167,7 @@ export function sellerLooksPerfumery(seller: string): boolean {
  *  2. keyword explícita de perfume (perfume/edp/edt/…) → sim;
  *  3. casa no banco Fragrantica → sim;
  *  4. só a MARCA bate → exige VOLUME (ml) como corroboração. Marca sozinha é
- *     sinal fraco: casa de perfume também vende bolsa, relógio e roupa — foi
+ *     sinal fraco: casa de perfume também vende bolsa, relógio e roupa - foi
  *     assim que uma "Shoulder Bag Maktub" foi postada como perfume.
  */
 export function isPerfumeProduct(title: string): boolean {
@@ -271,7 +271,7 @@ export async function scrapeCouponProducts(
       });
       const finalUrl: string = (res.request as { res?: { responseUrl?: string } })?.res?.responseUrl ?? url;
       if (finalUrl.includes('account-verification')) {
-        throw new AuthWallError('muro account-verification — cookie do painel expirado?');
+        throw new AuthWallError('muro account-verification - cookie do painel expirado?');
       }
       if (res.status !== 200) throw new Error(`scrape ${res.status}`);
       return parseOfertasHtml(res.data);
@@ -314,7 +314,7 @@ export async function sweepCouponList(
     try {
       pageData = await fetchCouponsPage(page);
     } catch (err) {
-      logger.error({ err: (err as Error).message, page }, '[ML/coupons] Falha na varredura — parando (cookie expirado?).');
+      logger.error({ err: (err as Error).message, page }, '[ML/coupons] Falha na varredura - parando (cookie expirado?).');
       break;
     }
     s.totalItems = pageData.total_items ?? s.totalItems;
@@ -337,7 +337,7 @@ export async function sweepCouponList(
 }
 
 export interface DiscoverOptions {
-  /** Piso da fração de produtos-perfume pra classificar o cupom (0–1). */
+  /** Piso da fração de produtos-perfume pra classificar o cupom (0-1). */
   minPerfumeFraction?: number;
   /** OU: nº absoluto de produtos-perfume que já qualifica. */
   minPerfumeProducts?: number;
@@ -352,7 +352,7 @@ export interface DiscoverResult {
   candidates: number;
   scraped: number;
   errors: number;
-  /** True se bateu no muro de auth (cookie expirado) — resultado NÃO é confiável. */
+  /** True se bateu no muro de auth (cookie expirado) - resultado NÃO é confiável. */
   authFailed: boolean;
 }
 
@@ -362,7 +362,7 @@ export interface DiscoverResult {
  * Dedupe de raspagem por URL de loja (cupons da mesma loja → 1 raspagem).
  *
  * Se o cookie expirar no meio (muro account-verification), ABORTA e devolve
- * `authFailed: true` — pra o chamador NÃO sobrescrever um cache bom com vazio.
+ * `authFailed: true` - pra o chamador NÃO sobrescrever um cache bom com vazio.
  */
 export async function discoverFromCoupons(
   coupons: Coupon[],
@@ -383,7 +383,7 @@ export async function discoverFromCoupons(
     '[ML/coupons] Sellers de perfumaria filtrados da lista.'
   );
 
-  // Cache só de SUCESSO (Deal[]): erro transitório não fica cacheado — assim
+  // Cache só de SUCESSO (Deal[]): erro transitório não fica cacheado - assim
   // outro cupom da mesma loja tenta de novo em vez de herdar a falha.
   const scrapeCache = new Map<string, Deal[]>();
   const out: PerfumeCoupon[] = [];
@@ -409,7 +409,7 @@ export async function discoverFromCoupons(
         scrapeCache.set(cacheKey, products);
       } catch (err) {
         if (err instanceof AuthWallError) {
-          logger.error('[ML/coupons] Muro de auth (cookie expirado) — abortando descoberta pra não gravar cache vazio.');
+          logger.error('[ML/coupons] Muro de auth (cookie expirado) - abortando descoberta pra não gravar cache vazio.');
           return { coupons: out, candidates: candidates.length, scraped, errors, authFailed: true };
         }
         errors += 1;

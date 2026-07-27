@@ -13,10 +13,10 @@ import { logger } from './logger';
 //  - uncaughtException: estado indefinido -> sai(1) pra o supervisor reiniciar limpo
 //    (use start-forever.bat / NSSM / pm2 pra reiniciar automaticamente).
 process.on('unhandledRejection', (reason) => {
-  logger.error({ reason: reason instanceof Error ? reason.message : reason }, '[Processo] unhandledRejection — seguindo.');
+  logger.error({ reason: reason instanceof Error ? reason.message : reason }, '[Processo] unhandledRejection - seguindo.');
 });
 process.on('uncaughtException', (err) => {
-  logger.error({ err: err.message, stack: err.stack }, '[Processo] uncaughtException — saindo pra reiniciar limpo.');
+  logger.error({ err: err.message, stack: err.stack }, '[Processo] uncaughtException - saindo pra reiniciar limpo.');
   process.exit(1);
 });
 

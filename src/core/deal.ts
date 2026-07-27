@@ -13,7 +13,7 @@ export interface Deal {
   priceOriginal: number | null;
   /** Preço "por" (atual). */
   priceNow: number;
-  /** Desconto em % (0–100). */
+  /** Desconto em % (0-100). */
   discountPercent: number;
   coupon: string | null;
   imageUrl: string | null;
@@ -23,7 +23,7 @@ export interface Deal {
   productUrl: string | null;
   /** Comissão estimada em % (usada no ranking), se disponível. */
   commissionRate: number | null;
-  /** Avaliação do produto (0–5), quando a fonte fornece. Usada pra filtrar bem-avaliados. */
+  /** Avaliação do produto (0-5), quando a fonte fornece. Usada pra filtrar bem-avaliados. */
   rating: number | null;
   /** Termo/categoria que encontrou a oferta. */
   category: string | null;

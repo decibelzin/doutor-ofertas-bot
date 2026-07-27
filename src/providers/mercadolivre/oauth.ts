@@ -7,13 +7,13 @@ import { logger } from '../../logger';
 /**
  * Gerência do token OAuth do Mercado Livre.
  *
- * Fluxo (Authorization Code, com Refresh Token — que você habilitou no app):
+ * Fluxo (Authorization Code, com Refresh Token - que você habilitou no app):
  *  1. `ml-auth` abre a URL de autorização; você autoriza e o ML redireciona
  *     para o redirect_uri com `?code=...`.
  *  2. Troca o `code` por access_token + refresh_token (exchangeCodeForToken).
  *  3. O access_token vale ~6h; quando expira, renova sozinho com o
  *     refresh_token (refreshAccessToken). O ML devolve um refresh_token NOVO a
- *     cada renovação — por isso sempre regravamos o arquivo.
+ *     cada renovação - por isso sempre regravamos o arquivo.
  *
  * Endpoints:
  *   Autorização: https://auth.mercadolivre.com.br/authorization

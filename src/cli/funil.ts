@@ -1,7 +1,7 @@
 import { lerFunil, formatarFunil, caminhoLogs } from '../core/funnel';
 
 /**
- * Funil no terminal. Mesma lógica que o /funil do Discord usa — os dois
+ * Funil no terminal. Mesma lógica que o /funil do Discord usa - os dois
  * chamam `lerFunil`, então não existe versão que conserta de um lado só.
  *
  *   npm run funil          -> hoje

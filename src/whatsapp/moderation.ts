@@ -5,7 +5,7 @@ import { store } from '../core/store';
 
 /**
  * MODERAÇÃO POR REAÇÃO: reagir com ❌ (ou outro emoji da lista) num anúncio VETA
- * aquele produto pra sempre — ele nunca mais é postado. Bloqueia SÓ o produto
+ * aquele produto pra sempre - ele nunca mais é postado. Bloqueia SÓ o produto
  * daquele anúncio, não a marca.
  *
  * Autorização: a reação da PRÓPRIA conta do bot (o número que roda o app) sempre
@@ -40,13 +40,13 @@ export function attachModeration(sock: WASocket): void {
 
       if (!emoji) continue; // reação removida
       if (!config.moderation.blockEmojis.includes(emoji)) {
-        logger.debug({ emoji }, '[Moderação] Emoji não é de veto — ignorado.');
+        logger.debug({ emoji }, '[Moderação] Emoji não é de veto - ignorado.');
         continue;
       }
       if (!isModerator(reactorJid ?? undefined, fromMe)) {
         logger.warn(
           { reactor: reactorJid },
-          '[Moderação] Reação de veto de número NÃO AUTORIZADO — ignorada. Autorize pondo o número em MODERATION_MODERATOR_JIDS no .env.'
+          '[Moderação] Reação de veto de número NÃO AUTORIZADO - ignorada. Autorize pondo o número em MODERATION_MODERATOR_JIDS no .env.'
         );
         continue;
       }
@@ -63,7 +63,7 @@ export function attachModeration(sock: WASocket): void {
       store.blockProduct(found.dealId, found.title);
       logger.warn(
         { produto: found.title, id: found.dealId, totalVetados: store.blockedCount() },
-        '[Moderação] ✅ Produto VETADO por reação — nunca mais será postado.'
+        '[Moderação] ✅ Produto VETADO por reação - nunca mais será postado.'
       );
     }
   });

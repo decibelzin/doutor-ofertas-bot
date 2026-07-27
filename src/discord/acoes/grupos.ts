@@ -4,7 +4,7 @@ import { EmbedBuilder } from 'discord.js';
 import { config } from '../../config';
 import { OURO, VERDE, VERMELHO, minutosAtras } from './comum';
 
-/** GRUPOS — o estado dos grupos de WhatsApp e pra onde o botão do site aponta. */
+/** GRUPOS - o estado dos grupos de WhatsApp e pra onde o botão do site aponta. */
 
 interface Grupo { name: string; link: string | null; members: number; people?: number; vacancies: number; full: boolean }
 interface GroupsFile { updatedAt: string; limit: number; join: string | null; totalMembers: number; totalPeople?: number; groups: Grupo[] }
@@ -27,7 +27,7 @@ function lerTodos(): { slug: string; dados: GroupsFile }[] {
     try {
       out.push({ slug, dados: JSON.parse(fs.readFileSync(arq, 'utf8')) as GroupsFile });
     } catch {
-      /* pasta sem groups.json (ex.: assets) — normal */
+      /* pasta sem groups.json (ex.: assets) - normal */
     }
   }
   return out;
@@ -39,10 +39,10 @@ export function montarGrupos(): EmbedBuilder {
   if (nichos.length === 0) {
     return new EmbedBuilder()
       .setColor(VERMELHO)
-      .setTitle('⚠️ Grupos — nenhum dado')
+      .setTitle('⚠️ Grupos - nenhum dado')
       .setDescription(
         `Não achei nenhum \`groups.json\` em \`${config.site.dir}\`.\n` +
-          'Quem escreve esse arquivo é o bot do WhatsApp — se ele estiver fora do ar, ' +
+          'Quem escreve esse arquivo é o bot do WhatsApp - se ele estiver fora do ar, ' +
           'não há o que ler.'
       );
   }
@@ -54,7 +54,7 @@ export function montarGrupos(): EmbedBuilder {
     const parado = idadeMin > config.site.refreshMinutes * 3;
     if (parado) e.setColor(OURO);
 
-    // O primeiro com vaga é pra onde o site manda a pessoa — é o que importa.
+    // O primeiro com vaga é pra onde o site manda a pessoa - é o que importa.
     const proximo = dados.groups.find((g) => !g.full && g.link);
 
     const linhas = dados.groups.map((g, i) => {
@@ -66,7 +66,7 @@ export function montarGrupos(): EmbedBuilder {
     });
 
     e.addFields({
-      name: `${slug} — ${dados.totalPeople ?? dados.groups.reduce((a, g) => a + pessoasDo(g), 0)} pessoas em ${dados.groups.length} grupos`,
+      name: `${slug} - ${dados.totalPeople ?? dados.groups.reduce((a, g) => a + pessoasDo(g), 0)} pessoas em ${dados.groups.length} grupos`,
       value:
         linhas.join('\n').slice(0, 1000) +
         `\n\nBotão do site → ${proximo ? `grupo **${dados.groups.indexOf(proximo) + 1}**` : '**NENHUM com vaga**'}` +

@@ -3,7 +3,7 @@
  * dataset público doevent/perfume (dump do Fragrantica), já com as notas
  * traduzidas pro português (data/notes-pt.json) e simplificadas.
  *
- * Roda OFFLINE, fora do caminho de postagem — as notas não mudam, então é
+ * Roda OFFLINE, fora do caminho de postagem - as notas não mudam, então é
  * raro precisar rodar. Notas ausentes do mapa PT ficam de fora.
  *
  *   npm run update-perfumes
@@ -84,7 +84,7 @@ async function main(): Promise<void> {
   if (semTraducao.size > 0) {
     logger.warn(
       { exemplos: [...semTraducao].slice(0, 20) },
-      '[perfumes] Notas sem tradução no mapa (ficaram de fora) — adicione ao data/notes-pt.json se relevantes.'
+      '[perfumes] Notas sem tradução no mapa (ficaram de fora) - adicione ao data/notes-pt.json se relevantes.'
     );
   }
 }

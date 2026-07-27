@@ -33,7 +33,7 @@ export async function listGroups(sock: WASocket): Promise<GroupInfo[]> {
 function upgradeMlImageUrl(url: string): string {
   return url
     .replace(/\.webp(\?.*)?$/i, '.jpg$1')
-    // Sobe pra 2X SÓ se ainda não for — senão "D_NQ_NP_2X_" (imagem do hub) viraria
+    // Sobe pra 2X SÓ se ainda não for - senão "D_NQ_NP_2X_" (imagem do hub) viraria
     // "D_NQ_NP2X_2X_", que o ML devolve como GIF placeholder quebrado.
     .replace(/D_NQ_NP_(?!2X_)/, 'D_NQ_NP2X_');
 }
@@ -43,7 +43,7 @@ function upgradeMlImageUrl(url: string): string {
  * nicho). É isso que faz a mensagem sair como as das referências: FOTO GRANDE
  * em cima + legenda embaixo, com o link clicável dentro da legenda.
  *
- * Retorna null se não houver imagem ou o download falhar — aí cai no texto puro
+ * Retorna null se não houver imagem ou o download falhar - aí cai no texto puro
  * (que o WhatsApp já deixa clicável por conta própria).
  */
 export async function fetchDealImage(deal: Deal, imageOverride?: string | null): Promise<Buffer | null> {
@@ -78,7 +78,7 @@ async function fetchImage(candidates: string[]): Promise<Buffer | null> {
 /**
  * Envia uma oferta para UM grupo. Quando há imagem, sai como MENSAGEM DE IMAGEM
  * com legenda (foto grande + link clicável na legenda). Sem imagem, cai no
- * texto puro — a URL continua clicável.
+ * texto puro - a URL continua clicável.
  */
 export async function sendToGroup(
   sock: WASocket,
@@ -94,7 +94,7 @@ export async function sendToGroup(
 
 /**
  * Envia pra UM grupo mencionando TODOS os participantes (o "@all"). É isso que
- * dispara notificação pra todo mundo — o texto "@all" é só cosmético; quem
+ * dispara notificação pra todo mundo - o texto "@all" é só cosmético; quem
  * notifica é o array `mentions` com os JIDs dos participantes. Usado no cupom.
  */
 export async function sendMentioningAll(
@@ -108,7 +108,7 @@ export async function sendMentioningAll(
     const meta = await sock.groupMetadata(groupId);
     mentions = (meta.participants ?? []).map((p) => p.id);
   } catch (err) {
-    logger.debug({ err: (err as Error).message, groupId }, '[WhatsApp] Sem metadata do grupo — enviando sem @all.');
+    logger.debug({ err: (err as Error).message, groupId }, '[WhatsApp] Sem metadata do grupo - enviando sem @all.');
   }
   const content = image ? { image, caption: text, mentions } : { text, mentions };
   await sock.sendMessage(groupId, content as never);
