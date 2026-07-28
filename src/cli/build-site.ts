@@ -47,6 +47,7 @@ function urlDoCss(): string {
 
 const TEMPLATE = path.resolve('src/site/landing.template.html');
 const TEMPLATE_HUB = path.resolve('src/site/hub.template.html');
+const TEMPLATE_PRIVACIDADE = path.resolve('src/site/privacidade.template.html');
 
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -313,6 +314,49 @@ function geraRobots(cfg: LandingsFile, raiz: string): void {
  *
  * Sem o bloco `hub` no config, cai no redirect antigo.
  */
+/**
+ * Canal pra exercer direitos da LGPD. Enquanto não houver e-mail público, o
+ * grupo é o canal que EXISTE de verdade - prometer um endereço que ninguém lê
+ * seria pior que não prometer nada.
+ */
+const CONTATO_LGPD = 'o administrador em qualquer um dos nossos grupos de WhatsApp';
+
+/**
+ * Política de privacidade, servida INTEIRA em dois caminhos: `/privacy`
+ * (canônico, porque foi o endereço registrado no Pinterest) e `/privacidade`.
+ *
+ * Os dois entregam o conteúdo completo em vez de um redirecionar pro outro:
+ * verificador automático de terceiro nem sempre segue redirect, e a URL fica
+ * gravada no cadastro deles pra revalidação futura - uma quebra apareceria
+ * meses depois, longe daqui. O `canonical` aponta pro mesmo lugar nos dois,
+ * então o buscador trata como uma página só.
+ */
+function geraPrivacidade(cfg: LandingsFile, raiz: string, tpl: string): void {
+  const canonica = `${cfg.baseUrl}/privacy/`;
+  const hoje = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric', timeZone: config.timezone,
+  });
+
+  const html = render(tpl, {
+    TITLE: 'Política de Privacidade - Doutor Ofertas',
+    PAGE_URL: canonica,
+    CSS_URL: urlDoCss(),
+    ATUALIZADO: hoje,
+    CONTATO: CONTATO_LGPD,
+  }).replace(
+    /^<!doctype html>/i,
+    '<!doctype html>\n<!-- GERADO por `npm run build-site`. NÃO edite à mão. -->'
+  );
+
+  for (const nome of ['privacy', 'privacidade']) {
+    const dir = path.join(raiz, nome);
+    fs.mkdirSync(dir, { recursive: true });
+    writeFileAtomic(path.join(dir, 'index.html'), html);
+  }
+
+  logger.info({ canonica, tambem: `${cfg.baseUrl}/privacidade/` }, '[site] Política de privacidade gerada.');
+}
+
 function geraHub(cfg: LandingsFile, raiz: string, tplHub: string): void {
   if (!cfg.hub) {
     const destino = `./${cfg.default}/`;
@@ -408,6 +452,7 @@ async function main(): Promise<void> {
 
   for (const landing of cfg.landings) await geraLanding(cfg, landing, tpl, raiz);
   geraHub(cfg, raiz, fs.readFileSync(TEMPLATE_HUB, 'utf8'));
+  geraPrivacidade(cfg, raiz, fs.readFileSync(TEMPLATE_PRIVACIDADE, 'utf8'));
   geraSitemap(cfg, raiz, new Date().toISOString().slice(0, 10));
   geraRobots(cfg, raiz);
 
