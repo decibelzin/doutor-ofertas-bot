@@ -315,11 +315,12 @@ function geraRobots(cfg: LandingsFile, raiz: string): void {
  * Sem o bloco `hub` no config, cai no redirect antigo.
  */
 /**
- * Canal pra exercer direitos da LGPD. Enquanto não houver e-mail público, o
- * grupo é o canal que EXISTE de verdade - prometer um endereço que ninguém lê
- * seria pior que não prometer nada.
+ * Canal pra exercer direitos da LGPD. Precisa ser uma caixa que alguém LÊ:
+ * endereço que ninguém acompanha é pior que não prometer nada, porque cria
+ * obrigação sem cumprir.
  */
-const CONTATO_LGPD = 'o administrador em qualquer um dos nossos grupos de WhatsApp';
+const EMAIL_LGPD = 'droferta@outlook.com';
+const CONTATO_LGPD = `<a href="mailto:${EMAIL_LGPD}">${EMAIL_LGPD}</a>`;
 
 /**
  * Política de privacidade, servida INTEIRA em dois caminhos: `/privacy`
