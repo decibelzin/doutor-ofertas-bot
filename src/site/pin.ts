@@ -40,7 +40,11 @@ const BADGE_CY = 230;
 
 const PILULA_Y = 1360;
 const PILULA_H = 88;
-const PILULA_TXT = 'GRUPO GRÁTIS NO WHATSAPP';
+/* A pílula carrega o DOMÍNIO, não a chamada. É o elemento de maior contraste
+   da arte, e no Pinterest o pin circula solto: é reprintado, salvo e
+   printado longe do link original. Quem vê precisa saber pra onde ir mesmo
+   sem poder clicar. A chamada desce pra linha de apoio. */
+const APOIO_TXT = 'GRUPO GRÁTIS NO WHATSAPP · OFERTA TODO DIA';
 
 /** Baseline máxima do preço grande - trava pra ele nunca encostar na pílula. */
 const PRECO_MAX_Y = 1320;
@@ -77,8 +81,8 @@ export async function geraPin(dados: DadosPin, imagem: Buffer, destino: string):
     textoSvg('DOUTOR OFERTAS', M + LOGO_D + 24, 96, {
       corpo: 42, cor: GOLD, familia: 'condensada', largura: COL - LOGO_D - 24,
     }),
-    textoSvg(dados.dominio, M + LOGO_D + 24, 130, {
-      corpo: 24, cor: MUTED, familia: 'arial', largura: COL - LOGO_D - 24,
+    textoSvg(dados.dominio, M + LOGO_D + 24, 132, {
+      corpo: 30, cor: TEXT, familia: 'arial', largura: COL - LOGO_D - 24,
     })
   );
 
@@ -142,8 +146,11 @@ export async function geraPin(dados: DadosPin, imagem: Buffer, destino: string):
   // de altura entre um e outro faz a série parecer de gente diferente.
   partes.push(
     `<rect x="${M}" y="${PILULA_Y}" width="${COL}" height="${PILULA_H}" rx="${PILULA_H / 2}" fill="${GREEN}"/>`,
-    textoSvg(PILULA_TXT, W / 2, PILULA_Y + PILULA_H / 2 + 13, {
-      corpo: 38, cor: BG, familia: 'arial', largura: COL - 60, centro: true, negrito: true,
+    textoSvg(dados.dominio.toUpperCase(), W / 2, PILULA_Y + PILULA_H / 2 + 16, {
+      corpo: 46, cor: BG, familia: 'arial', largura: COL - 60, centro: true, negrito: true,
+    }),
+    textoSvg(APOIO_TXT, W / 2, PILULA_Y + PILULA_H + 34, {
+      corpo: 26, cor: MUTED, familia: 'arial', largura: COL, centro: true,
     })
   );
 
