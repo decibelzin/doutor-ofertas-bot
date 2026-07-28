@@ -87,7 +87,10 @@ export function formatDeal(
      que é o comportamento natural em grupo de promoção - não recruta ninguém:
      o amigo recebe o perfume com desconto e nenhum caminho de volta. */
   if (opts.footerUrl) {
-    blocks.push(`📲 Recebeu encaminhado? Oferta assim todo dia:\n${opts.footerUrl}`);
+    /* ⚠️ "perfume" está cravado porque hoje só existe o nicho de perfume. Ao
+       ligar um segundo nicho, esta linha vira mentira - passe o texto por
+       parâmetro a partir do nicho. */
+    blocks.push(`📲 Ofertas de perfume todo dia, no grupo grátis:\n${opts.footerUrl}`);
   }
 
   // Uma linha em branco entre CADA bloco (respiro/premium).
