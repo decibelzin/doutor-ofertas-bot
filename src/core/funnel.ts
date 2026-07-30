@@ -114,6 +114,9 @@ export interface FunilResumo {
   paginas: number;
   cliques: number;
   cliquesUnicos: number;
+  /** Cliques na porta alternativa (Discord). Contados à parte do CTA. */
+  discord: number;
+  discordUnicos: number;
   /** null quando não houve visita - evita dividir por zero e fingir 0%. */
   taxaCliquePercent: number | null;
   /**
@@ -162,6 +165,21 @@ const FONTE = /[?&]f=([a-z0-9-]{1,16})(?:&|$)/;
 const fonte = (caminho: string): string => FONTE.exec(caminho)?.[1] ?? 'sem fonte';
 
 /**
+ * Qual BOTÃO foi clicado: `c=cta` (grupo do WhatsApp) ou `c=discord` (porta
+ * alternativa pra quem não quer expor o telefone).
+ *
+ * Default 'cta' de propósito: até esta mudança o beacon só existia pro CTA e
+ * mandava `c=cta`, mas tratar a ausência como 'cta' garante que nenhuma linha
+ * antiga de log mude de significado retroativamente.
+ *
+ * Separar importa: somados, a TAXA DE CLIQUE misturaria duas conversões
+ * diferentes e deixaria de responder "a landing põe gente no grupo?".
+ */
+const EVENTO = /[?&]c=([a-z0-9-]{1,16})(?:&|$)/;
+
+const evento = (caminho: string): string => EVENTO.exec(caminho)?.[1] ?? 'cta';
+
+/**
  * IPs únicos por chave.
  *
  * A unidade honesta pra "quantas PESSOAS" - `contar` responde "quantas linhas
@@ -206,8 +224,14 @@ export function lerFunil(dias = 1): FunilResumo {
     .filter((l) => l.metodo === 'GET' && l.status === 200 && PAGINA_NICHO.test(l.caminho.split('?')[0]));
 
   // sendBeacon = POST. Aceitar só GET contaria zero e casaria com os curl de teste.
-  const cliques = parseLinhas(lerLog(config.site.logCliques), desde)
+  const todosCliques = parseLinhas(lerLog(config.site.logCliques), desde)
     .filter((l) => l.caminho.startsWith('/e'));
+
+  // `cliques` continua significando SÓ o botão do WhatsApp - é o que a taxa de
+  // clique e o porFonte medem desde sempre, e mudar isso quebraria a
+  // comparação com os dias anteriores.
+  const cliques = todosCliques.filter((l) => evento(l.caminho) === 'cta');
+  const discord = todosCliques.filter((l) => evento(l.caminho) === 'discord');
 
   const ipsVisita = new Set(acessos.map((l) => l.ip));
   const ipsClique = new Set(cliques.map((l) => l.ip));
@@ -251,6 +275,8 @@ export function lerFunil(dias = 1): FunilResumo {
     paginas: acessos.length,
     cliques: cliques.length,
     cliquesUnicos: ipsClique.size,
+    discord: discord.length,
+    discordUnicos: new Set(discord.map((l) => l.ip)).size,
     taxaCliquePercent: ipsVisita.size > 0 ? (ipsClique.size / ipsVisita.size) * 100 : null,
     origens: [...unicosPor(acessos, (l) => origem(l.referrer)).entries()]
       .map(([origem, ips]) => ({ origem, visitantes: ips.size }))
@@ -276,6 +302,7 @@ export function formatarFunil(f: FunilResumo): string {
   linha('cliques no botão', f.cliques);
   linha('quem clicou (IP único)', f.cliquesUnicos);
   linha('TAXA DE CLIQUE', f.taxaCliquePercent === null ? '-' : `${f.taxaCliquePercent.toFixed(1)}%`);
+  linha('porta Discord', `${f.discord} (${f.discordUnicos} pessoas)`);
 
   if (f.origens.length) {
     L.push('', '  De onde vieram (visitantes):');

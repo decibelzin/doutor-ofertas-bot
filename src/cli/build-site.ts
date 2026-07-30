@@ -190,6 +190,10 @@ async function geraLanding(cfg: LandingsFile, landing: Landing, tpl: string, rai
     BLOCO_TURMA: landing.turma.trim()
       ? `    <p class="vagas">${escapeHtml(landing.turma)}</p>`
       : '',
+    BLOCO_ALTERNATIVA: cfg.discordInvite
+      ? `    <p class="alt">Não quer usar seu WhatsApp? ` +
+        `<a id="alt-discord" href="${escapeHtml(cfg.discordInvite)}" rel="noopener">Entre pelo Discord</a></p>`
+      : '',
     NOTA: escapeHtml(landing.nota),
     RODAPE: escapeHtml(landing.rodape),
     FALLBACK_INVITE: escapeHtml(landing.fallbackInvite),

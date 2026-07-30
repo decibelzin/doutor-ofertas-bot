@@ -122,6 +122,14 @@
          defendendo de uma acusacao. Aqui ficam as objecoes que sobram. -->
     <p class="cta-note">{{NOTA}}</p>
 
+    <!-- Porta alternativa. Fica ABAIXO e menor que o botao de proposito: quem
+         nao tem a objecao do telefone nao pode ser distraido do caminho
+         principal. O texto nomeia a OBJECAO, nao a plataforma - "Discord"
+         sozinho seria uma marca competindo com o botao verde; "nao quer usar
+         seu WhatsApp?" so e lido por quem tem exatamente esse receio.
+         OPCIONAL: sem `discordInvite` no config, nao renderiza nada. -->
+{{BLOCO_ALTERNATIVA}}
+
     <!-- Rota de fuga: so aparece se o handoff pro app falhar (webview que
          engole a navegacao). Sem isso, quem toca e nao ve nada vai embora. -->
     <p class="escape" id="escape" hidden>
@@ -196,6 +204,24 @@
         } catch (e) {
           copiar.textContent = cta.href;
         }
+      });
+    }
+
+    /* ── Porta alternativa (Discord) ──────────────────────────────────────
+       Marca `c=discord`, e nao `c=cta`. O funil separa os dois: se contassem
+       junto, a taxa de clique - o numero que decide onde investir tempo -
+       passaria a misturar duas conversoes diferentes e viraria inutil.
+
+       Sem preventDefault: o <a> navega sozinho, e sendBeacon foi feito
+       exatamente pra sobreviver a navegacao que ja comecou. */
+    const alt = document.getElementById('alt-discord');
+    if (alt) {
+      alt.addEventListener('click', () => {
+        try {
+          navigator.sendBeacon(
+            '/e?c=discord&n={{SLUG}}' + (fonte ? '&f=' + fonte : '')
+          );
+        } catch (e) { /* segue o clique normalmente */ }
       });
     }
 

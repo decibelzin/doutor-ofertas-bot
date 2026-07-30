@@ -12,6 +12,7 @@
   ],
   "baseUrl": "https://doutorofertas.com.br",
   "default": "perfumes",
+  "discordInvite": "https://discord.gg/anur6hc2W7",
   "hub": {
     "title": "Doutor Ofertas - ofertas e cupons todo dia no WhatsApp",
     "description": "Grupos de WhatsApp com ofertas e cupons de verdade, todo dia. Escolha o seu.",

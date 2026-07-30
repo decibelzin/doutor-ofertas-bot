@@ -366,3 +366,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Porta alternativa (Discord/Telegram) abaixo do botão principal.
+   Menor e mais apagada que o CTA de proposito: ela existe pra quem tem a
+   objecao do telefone, e nao pode roubar atencao de quem nao tem. O link em
+   si vai em --gold pra ficar obviamente clicavel, senao a frase inteira se
+   perde como texto de rodape. */
+.alt {
+  font-size: clamp(11px, 2.8vw, 16px);
+  color: var(--muted);
+  margin-top: calc(var(--rhythm) * .5);
+}
+
+.alt a {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

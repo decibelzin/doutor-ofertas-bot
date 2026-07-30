@@ -31,6 +31,16 @@ export function montarEmbedFunil(f: FunilResumo): EmbedBuilder {
       { name: 'Taxa de clique', value: `**${pct(f.taxaCliquePercent)}**`, inline: true }
     );
 
+    // Porta alternativa em campo separado, nunca somada ao CTA: a pergunta que
+    // ela responde é "quanta gente estava batendo numa porta fechada?".
+    if (f.discord > 0) {
+      e.addFields({
+        name: 'Porta Discord',
+        value: `**${f.discordUnicos}**\n_${f.discord} clique(s)_`,
+        inline: true,
+      });
+    }
+
     if (f.origens.length) {
       e.addFields({
         name: 'De onde vieram',

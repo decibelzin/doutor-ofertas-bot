@@ -73,6 +73,17 @@ export interface LandingsFile {
   default: string;
   /** Sem isto, a raiz vira um redirect simples (comportamento antigo). */
   hub?: Hub;
+  /**
+   * Convite PERMANENTE do servidor do Discord (nunca expira, usos ilimitados).
+   *
+   * Porta alternativa pra quem não quer entrar em grupo de WhatsApp - lá os
+   * outros participantes enxergam o telefone, e essa objeção é real, não
+   * impressão. Ausente = a landing não mostra a alternativa.
+   *
+   * ⚠️ Convite do Discord expira em 7 dias por padrão. Um link com validade
+   * aqui vira botão quebrado numa semana, sem erro nenhum aparecer.
+   */
+  discordInvite?: string;
   landings: Landing[];
 }
 
@@ -179,5 +190,16 @@ export function loadLandings(): LandingsFile | null {
     '[Landings] Configuração carregada.'
   );
 
-  return { baseUrl, default: padrao, ...(raw.hub ? { hub: raw.hub } : {}), landings };
+  const convite = (raw.discordInvite ?? '').trim();
+  if (convite && !/^https:\/\/(discord\.gg|discord\.com\/invite)\//.test(convite)) {
+    throw new Error(`config/landings.json: "discordInvite" não parece um convite do Discord: ${convite}`);
+  }
+
+  return {
+    baseUrl,
+    default: padrao,
+    ...(raw.hub ? { hub: raw.hub } : {}),
+    ...(convite ? { discordInvite: convite } : {}),
+    landings,
+  };
 }
