@@ -376,12 +376,29 @@ body {
   font-size: clamp(11px, 2.8vw, 16px);
   color: var(--muted);
   margin-top: calc(var(--rhythm) * .5);
+
+  /* Flex, e nao text-align + vertical-align: alinhar o selo por `vertical-align`
+     e chute - o valor certo muda com a fonte, com o tamanho e com a tela, entao
+     acerta num aparelho e erra nos outros. `align-items: center` centraliza de
+     verdade, em qualquer corpo de texto.
+     `wrap` deixa a pergunta e o link quebrarem em duas linhas no celular
+     estreito em vez de espremer os dois. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .3em;
 }
 
 .alt a {
   color: var(--gold);
   text-decoration: underline;
   text-underline-offset: 2px;
+
+  /* Tambem flex: e o que centraliza a bolinha contra o texto DO LINK. */
+  display: inline-flex;
+  align-items: center;
+  gap: .4em;
 }
 
 /* Bolinha na cor do Discord com o mark dentro, antes do texto do link.
@@ -396,9 +413,12 @@ body {
   width: 1.45em;
   height: 1.45em;
   padding: .28em;
-  margin-right: .4em;
   border-radius: 50%;
   background: #5865f2;
-  vertical-align: -.35em;
   box-sizing: border-box;
+
+  /* Nao encolher quando a linha ficar apertada: sem isto o flex achata a
+     bolinha num oval no celular estreito. O espaco ate o texto vem do `gap`
+     do <a>, nao de margin - assim nao ha dois controles disputando. */
+  flex: 0 0 auto;
 }
