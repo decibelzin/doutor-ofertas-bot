@@ -383,3 +383,22 @@ body {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Bolinha na cor do Discord com o mark dentro, antes do texto do link.
+   Tamanho em `em` pra acompanhar o clamp() do .alt: em `px` viraria um ponto
+   perdido no celular e um botao desproporcional no desktop.
+   O padding interno existe porque o mark do Discord e largo e sem folga
+   encostaria na borda do circulo. */
+.alt-selo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  padding: .28em;
+  margin-right: .4em;
+  border-radius: 50%;
+  background: #5865f2;
+  vertical-align: -.35em;
+  box-sizing: border-box;
+}
