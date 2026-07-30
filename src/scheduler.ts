@@ -12,6 +12,7 @@ import { setAlertSink, alertAuthDegraded } from './core/health';
 import { lerPausa } from './core/pausa';
 import { urlDaLanding } from './core/landing';
 import { isKnownPerfume } from './core/quality';
+import { enviarOfertaDiscord } from './core/oferta-discord';
 import { enviarAlertaDiscord } from './core/alerta-discord';
 import { enrichWithShortLink } from './providers/mercadolivre/shortlink';
 import { couponsEnabled } from './providers/mercadolivre/coupons';
@@ -145,6 +146,11 @@ export async function postNiche(
       await sleep(randomDelay(config.throttle.groupDelayMinMs, config.throttle.groupDelayMaxMs));
     }
   }
+
+  /* Canal do Discord DEPOIS dos grupos, e sem await que possa quebrar a rodada:
+     o WhatsApp é o canal principal e já foi servido. A função engole o próprio
+     erro, então Discord fora do ar vira um post a menos, não rodada perdida. */
+  await enviarOfertaDiscord(deal);
 }
 
 /** Posta uma oferta para CADA nicho (usado pelo comando post-now). */
