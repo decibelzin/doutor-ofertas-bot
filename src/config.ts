@@ -123,6 +123,10 @@ export interface Config {
     // o processo do WhatsApp, e um POST HTTP chega mesmo se o bot do Discord
     // estiver fora do ar. Vazio = só loga.
     webhookAlertas: string;
+    // Cargo entregue pelo botão do /entrada. Casado por NOME, não por ID: é o
+    // que o dono do servidor enxerga na tela de cargos, e evita ter que copiar
+    // um ID pro .env só pra ligar o comando.
+    cargoEntrada: string;
   };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
@@ -236,6 +240,7 @@ export const config: Config = {
     clientId: process.env.DISCORD_CLIENT_ID ?? '',
     guildId: process.env.DISCORD_GUILD_ID ?? '',
     webhookAlertas: process.env.DISCORD_WEBHOOK_ALERTAS ?? '',
+    cargoEntrada: process.env.DISCORD_CARGO_ENTRADA ?? 'membro',
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length

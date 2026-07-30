@@ -7,7 +7,9 @@ import * as status from './commands/status';
 import * as grupos from './commands/grupos';
 import * as pausar from './commands/pausar';
 import * as retomar from './commands/retomar';
+import * as entrada from './commands/entrada';
 import { tratarBotaoPainel } from './painel';
+import { tratarBotaoEntrada } from './entrada';
 
 /**
  * BOT DO DISCORD - processo separado do bot do WhatsApp.
@@ -26,7 +28,7 @@ import { tratarBotaoPainel } from './painel';
  * mensagem, então o bot roda com o mínimo de permissão possível.
  */
 
-const comandos = [painel, status, funil, grupos, pausar, retomar];
+const comandos = [painel, status, funil, grupos, pausar, retomar, entrada];
 
 async function registrarComandos(): Promise<void> {
   const rest = new REST().setToken(config.discord.token);
@@ -58,8 +60,21 @@ export async function iniciarDiscord(): Promise<Client> {
 
   client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.isButton()) {
-      // O painel responde por todos os botões `painel:*`.
-      if (await tratarBotaoPainel(interaction)) return;
+      // Cada módulo responde pelo próprio prefixo de customId e devolve false
+      // quando o botão não é dele. Roteamento por prefixo, e não por coletor,
+      // é o que faz os botões sobreviverem a um restart do bot.
+      // O try existia só pros slash commands. Botão que explodia virava
+      // unhandled rejection e deixava quem clicou olhando pro nada.
+      try {
+        if (await tratarBotaoPainel(interaction)) return;
+        if (await tratarBotaoEntrada(interaction)) return;
+      } catch (err) {
+        logger.error({ err: (err as Error).message, botao: interaction.customId },
+          '[discord] Erro não tratado no botão.');
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: 'Deu erro. Avise um administrador.', flags: MessageFlags.Ephemeral });
+        }
+      }
       return;
     }
     if (!interaction.isChatInputCommand()) return;
