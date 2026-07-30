@@ -4,42 +4,58 @@ import { montarEmbedOferta } from '../format/discord';
 import type { Deal } from './deal';
 
 /**
- * OFERTAS NO CANAL DO DISCORD, via webhook.
+ * OFERTAS NO CANAL DO DISCORD, via REST.
  *
- * Mesma escolha do alerta-discord.ts: webhook e não o client do discord.js.
- * Quem posta a oferta é o processo do BOT DO WHATSAPP, que é separado do bot do
+ * Quem posta a oferta é o processo do BOT DO WHATSAPP, separado do bot do
  * Discord de propósito (a sessão do Baileys é frágil demais pra dividir
- * processo). Um POST HTTP não cria dependência entre os dois: se o bot do
- * Discord cair, a oferta continua chegando no canal.
+ * processo). Então ele precisa de um jeito de falar com o Discord sem virar
+ * refém do outro processo estar vivo.
  *
- * Sem DISCORD_WEBHOOK_OFERTAS configurado, não faz nada.
+ * `POST /channels/{id}/messages` com o próprio `DISCORD_TOKEN` resolve isso sem
+ * abrir conexão de gateway, sem pedir intent e sem IPC entre os dois serviços.
+ * Preferido a um webhook de canal porque:
+ *   - não cria uma credencial nova pra guardar e rotacionar;
+ *   - a mensagem sai com a identidade do BOT, não com um remetente paralelo;
+ *   - webhook comum não aceita botão/componente, e um dia a oferta pode querer.
  *
- * Não tem dedup próprio: é chamado no mesmo ponto em que a oferta foi escolhida
- * e postada nos grupos, então herda o dedup do `store`. Um dedup separado aqui
- * só criaria a chance dos dois canais divergirem.
+ * Sem DISCORD_CANAL_OFERTAS (ou sem DISCORD_TOKEN), não faz nada.
  */
-export async function enviarOfertaDiscord(deal: Deal): Promise<boolean> {
-  const url = config.discord.webhookOfertas;
-  if (!url) return false;
 
-  const corpo = {
-    username: 'Doutor Ofertas',
-    embeds: [montarEmbedOferta(deal)],
-  };
+const API = 'https://discord.com/api/v10';
+
+/** Erros da API que têm causa conhecida - vale dizer qual em vez de só o código. */
+function explicar(status: number): string {
+  if (status === 401) return 'DISCORD_TOKEN inválido ou expirado.';
+  if (status === 403) return 'o bot não tem permissão de ver ou escrever neste canal.';
+  if (status === 404) return 'canal não encontrado - confira DISCORD_CANAL_OFERTAS.';
+  if (status === 429) return 'rate limit do Discord.';
+  return `HTTP ${status}.`;
+}
+
+export async function enviarOfertaDiscord(deal: Deal): Promise<boolean> {
+  const canal = config.discord.canalOfertas;
+  const token = config.discord.token;
+  if (!canal || !token) return false;
 
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);
-    const res = await fetch(url, {
+    const res = await fetch(`${API}/channels/${canal}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(corpo),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bot ${token}`,
+      },
+      body: JSON.stringify({ embeds: [montarEmbedOferta(deal)] }),
       signal: ctrl.signal,
     });
     clearTimeout(t);
 
     if (!res.ok) {
-      logger.warn({ status: res.status, id: deal.id }, '[Discord] Webhook de ofertas recusou.');
+      logger.warn(
+        { status: res.status, causa: explicar(res.status), id: deal.id },
+        '[Discord] Canal recusou a oferta.'
+      );
       return false;
     }
     logger.info({ id: deal.id, title: deal.title }, '[Discord] Oferta publicada no canal.');

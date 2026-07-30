@@ -127,10 +127,10 @@ export interface Config {
     // que o dono do servidor enxerga na tela de cargos, e evita ter que copiar
     // um ID pro .env só pra ligar o comando.
     cargoEntrada: string;
-    // Webhook do canal onde as OFERTAS são publicadas. Webhook e não o bot pelo
-    // mesmo motivo do de alertas: quem posta é o processo do WhatsApp, e ele não
-    // pode passar a depender do bot do Discord estar vivo. Vazio = não publica.
-    webhookOfertas: string;
+    // Canal onde as OFERTAS são publicadas (ID, não nome). Publicado por REST
+    // com o próprio DISCORD_TOKEN - sem gateway, sem intent, sem acoplar o
+    // processo do WhatsApp ao bot do Discord. Vazio = não publica.
+    canalOfertas: string;
   };
   moderation: {
     // Emojis que, reagidos num anúncio, VETAM aquele produto pra sempre.
@@ -245,7 +245,7 @@ export const config: Config = {
     guildId: process.env.DISCORD_GUILD_ID ?? '',
     webhookAlertas: process.env.DISCORD_WEBHOOK_ALERTAS ?? '',
     cargoEntrada: process.env.DISCORD_CARGO_ENTRADA ?? 'membro',
-    webhookOfertas: process.env.DISCORD_WEBHOOK_OFERTAS ?? '',
+    canalOfertas: process.env.DISCORD_CANAL_OFERTAS ?? '',
   },
   moderation: {
     blockEmojis: list(process.env.MODERATION_BLOCK_EMOJIS).length
