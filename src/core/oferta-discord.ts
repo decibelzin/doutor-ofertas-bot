@@ -1,6 +1,6 @@
 import { config } from '../config';
 import { logger } from '../logger';
-import { montarEmbedOferta } from '../format/discord';
+import { montarMensagemOferta } from '../format/discord';
 import type { Deal } from './deal';
 
 /**
@@ -46,7 +46,7 @@ export async function enviarOfertaDiscord(deal: Deal): Promise<boolean> {
         'Content-Type': 'application/json',
         Authorization: `Bot ${token}`,
       },
-      body: JSON.stringify({ embeds: [montarEmbedOferta(deal)] }),
+      body: JSON.stringify(montarMensagemOferta(deal)),
       signal: ctrl.signal,
     });
     clearTimeout(t);
